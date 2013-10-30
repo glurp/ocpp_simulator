@@ -88,12 +88,19 @@ TODO...
 Configuration
 =============
 
-All transactiona are configured in templateOCPP.rb
-each SOAP request/response are configured with
-* response: xml template to send
-* response: list a 'value'  (replace strings) to be use a parameters
-* request : list of filter of value to extract from request
-* 
+All requests/responses are configured in templateOCPP.rb
 
+Client : each SOAP request/response are configured with
+* request: xml template to send, each 'value' place are represented  with a key
+* request: list the  key in request (replace strings) to be use a parameters
+* response : list of filter of value to extract from request
 
+Server : each SOAP request/response are configured with
+* request: hash of  'xpath' to be use for extract data, value of hash are varnames. So a request
+  received is represented by a hash of varname=>value 
+* response : (as request of client) : string template, list of key
+
+LIMITATION !!! : all that SOAP stuff work only withe xml with statics structure !
+* you can't extract a list of tagid received from CS
+* you can't send a free list of measures
 
