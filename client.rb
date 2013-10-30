@@ -39,10 +39,10 @@
 ######################################################################################
 # Exemples :
 #
-# ruby client.rb  http://127.0.0.1:6060/ocpp  CB1002 hbeat
-# ruby client.rb  http://ns308363.ovh.net:6060/ocpp   CB1000 startTransaction CONID 1 TAGID 11223344
-# ruby client.rb  http://ns308363.ovh.net:6060/ocpp   CB1000 stopTransaction TRANSACTIONID 818101 
-# ruby client.rb  http://localhost:6061/ocpp          CB1000 meterValues CONID 1 V1 1 V2 2 V3 3 V4 4 V5 5 V6 6 V7 7 V8 8 V9 9 V10 10 V11 11 V12 12 V13 13 
+# ruby client.rb  http://127.0.0.1:6060/ocpp       CB1002 hbeat
+# ruby client.rb  http://ns363.ovh.net:6060/ocpp   CB1000 startTransaction CONID 1 TAGID 11223344
+# ruby client.rb  http://ns363.ovh.net:6060/ocpp   CB1000 stopTransaction TRANSACTIONID 818101 
+# ruby client.rb  http://localhost:6061/ocpp       CB1000 meterValues CONID 1 V1 1 V2 2 V3 3 V4 4 V5 5 V6 6 V7 7 V8 8 V9 9 V10 10 V11 11 V12 12 V13 13 
 #
 ######################################################################################
 
