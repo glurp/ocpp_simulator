@@ -1,0 +1,7 @@
+client.rb http://ns308454.org:6060/ocpp  CB1000 hbeat
+client.rb http://ns308454.org:6060/ocpp  CB1000 statusNotification  CONID 1 STATUS Available
+client.rb http://ns308454.org:6060/ocpp  CB1000 meterValue CONID 1 VALUE 24
+client.rb http://ns308454.org:6060/ocpp  CB1000 startTransaction CONID 1 METERSTART  22 TIMESTAMP 2013-12-12T23:23:23
+client.rb http://ns308454.org:6060/ocpp  CB1000 meterValue CONID 1 VALUE 24
+client.rb http://ns308454.org:6060/ocpp  CB1000 stopTransaction TRANSACID 801  METERSTOP  22 TIMESTAMP 2013-12-12T24:23:23
+client.rb http://ns308454.org:6060/ocpp  CB1000 hbeat
