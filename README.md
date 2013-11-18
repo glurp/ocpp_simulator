@@ -9,10 +9,10 @@ SOAP is used via xml templates, so this gem do not depend on any soap stack ...
 * client.rb : invoke CP->CS dialog. Alone can invoke a SOAP request to a scada
 * server.rb : serve a CS->CP dialog. Alone it print request/responses,  responses are always status=Accepted. 
               server api : invoke a client callback foreach request received
-* cp.rb : simulate a Charge Point, use client.rb and serveur.rb for scada dialogs, make some start/stop 
-          transactions, some notifications.
-* park.rb : simulate a set of charge point.
-* 
+* cp.rb : simulate one Charge Point with multiple connectorId, use client.rb and serveur.rb for 
+  scada dialogs, make some start/stop transactions, some notifications.
+* parc_sim.rb : simulate a set of charge point.
+ 
 
 Client
 ======
@@ -38,7 +38,7 @@ Examples :
 Server
 =====
 
-exemples :
+traces exemples (with -d) :
 ```
 >>
 "connexion... #<TCPSocket:0x357b7a8>"
@@ -78,10 +78,10 @@ data : <<
 
 
 CP : simulation of a ChargePoint
-=== 
+=============================== 
 Usage: 
-  > ruby cp.rb  name    ip        port path    url_server                  c1 c2 c3...
-  > ruby cp.rb  SIEM001 localhost 6061 /ocpp   http://localhost:9090/ocpp  1 2 3 4
+    > ruby cp.rb  name    ip        port path    url_server                  c1 c2 c3...
+    > ruby cp.rb  SIEM001 localhost 6061 /ocpp   http://localhost:9090/ocpp  1 2 3 4
 
 What is simulate:
 * boot, lock , ask autorize, start charge, stop charge : autonomous (tempo/random/duration)
@@ -96,9 +96,10 @@ What is missing:
 * reservation
 
 
-Park
-====
-creater a bunch of ChargePoint
+Parc_sim
+========
+Create a bunch of ChargePoint
+       > ruby parc._simrb  nb ip  port0 path  url_server  nb_connector_by_cp
 
 Configuration
 =============
