@@ -77,13 +77,29 @@ data : <<
 ```
 
 
-CP
-===
-TODO...
+CP : simulation of a ChargePoint
+=== 
+Usage: 
+                /-------cp side:ip adress----\ /---serv ip---\            -- Connector list --
+  > ruby cp.rb  name    ip        port path    url_server                  c1 c2 c3...
+  > ruby cp.rb  SIEM001 localhost 6061 /ocpp   http://localhost:9090/ocpp  1 2 3 4
+
+What is simulate:
+* boot, lock , ask autorize, start charge, stop charge : autonomous (tempo/random/duration)
+* energies imported, send it by meterValues periodicly
+* start / stop charge by remote commande (suppose that (transactionId%100) => connectorId !!)
+* change Availlibility by remote commande (Inoperative ==> reboot)
+
+What is missing:
+* statusNotification with errorCode
+* diagnostic, dataTransfered,updateFirmware (!), getConfiguration,reset, 
+* localList of tag (the tag is alays the same : '12345678')
+* reservation
+
 
 Park
 ====
-TODO...
+creater a bunch of ChargePoint
 
 Configuration
 =============
@@ -100,7 +116,7 @@ Server : each SOAP request/response are configured with
   received is represented by a hash of varname=>value 
 * response : (as request of client) : string template, list of key
 
-LIMITATION !!! : all that SOAP stuff work only withe xml with statics structure !
+LIMITATION !!! : all that SOAP stuff work only with xml with statics structure !
 * you can't extract a list of tagid received from CS
-* you can't send a free list of measures
+* you can't send a free list of meter
 

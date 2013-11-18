@@ -20,7 +20,7 @@
 #     cli=PostSoap.new("ID"=>"boxIndentity", "HMESSID"=>"A%", "HFROM"=>"http://boxserverip:9090/path-ocpp", "HTO"=>"you")
 #
 #    use Connection :
-#      cli.send(server,requestName,param) 
+#      cli.csend(server,requestName,param) 
 #
 #    Example. Configuration of startTransaction request :
 #   :startTransaction=>
@@ -30,19 +30,19 @@
 #       :ret=>["t:transactionId" => "TRANSACID" ],
 #      },
 #  usage :
-#   send( supervsor-url request-name n hash_parameterà
+#   csend( supervsor-url request-name n hash_parameterà
 #      which return response datas values
 #
-#   ret=cli.send("http://host:6677/ocpp",:startTransaction,{ CONID => 1, "TAGID" => "12345678" , "TIMESTAMP" => "2000-10-30T22:33:01z" })
+#   ret=cli.csend("http://host:6677/ocpp",:startTransaction,{ CONID => 1, "TAGID" => "12345678" , "TIMESTAMP" => "2000-10-30T22:33:01z" })
 #   ret=> { "TRANSACID" => 12434 }
 #
 ######################################################################################
 # Exemples :
 #
-# ruby client.rb  http://127.0.0.1:6060/ocpp       CB1002 hbeat
-# ruby client.rb  http://ns363.ovh.net:6060/ocpp   CB1000 startTransaction CONID 1 TAGID 11223344
-# ruby client.rb  http://ns363.ovh.net:6060/ocpp   CB1000 stopTransaction TRANSACTIONID 818101 
-# ruby client.rb  http://localhost:6061/ocpp       CB1000 meterValues CONID 1 V1 1 V2 2 V3 3 V4 4 V5 5 V6 6 V7 7 V8 8 V9 9 V10 10 V11 11 V12 12 V13 13 
+# ruby client.rb  http://127.0.0.1:6060/ocpp  CB1002 hbeat
+# ruby client.rb  http://ns308363.ovh.net:6060/ocpp   CB1000 startTransaction CONID 1 TAGID 11223344
+# ruby client.rb  http://ns308363.ovh.net:6060/ocpp   CB1000 stopTransaction TRANSACTIONID 818101 
+# ruby client.rb  http://localhost:6061/ocpp          CB1000 meterValues CONID 1 V1 1 V2 2 V3 3 V4 4 V5 5 V6 6 V7 7 V8 8 V9 9 V10 10 V11 11 V12 12 V13 13 
 #
 ######################################################################################
 
@@ -87,11 +87,15 @@ class PostSoap
     #puts "response : #{rep}"
     rep.showXmlData("Soap Response :")
     rep
+  rescue Errno::ECONNREFUSED => e
+    puts "Echec Connection => #{ip}:#{port} "
+    nil
   rescue Exception => e
-    puts "#{e} :\n   #{e.backtrace.join("\n   ")}"
+    puts "#{e} #{e.class} :\n   #{e.backtrace.join("\n   ")}"
     nil
   end
-  def send(server,request,hparam)
+  def csend(server,request,hparam)
+    raise("Unknown OCPP request : #{request}")  unless $cp_to_cs[:config][request]
     buff=format_http(server,request,hparam)
     puts buff if $DEBUG
     rep=http_post(server,buff)
@@ -113,7 +117,7 @@ if ARGV.size==0
     param["CONID"]=1 if param["CONID"]
     puts "\n\n\n#{'*'*20} #{name} #{'*'*20}"
     p param
-    puts r.send(server,name,param) 
+    puts r.csend(server,name,param) 
   }
 else  
 
@@ -131,6 +135,6 @@ else
   param= h[:params].inject({}) { |h,k| h[k] = rand(100000).to_s ; h}
   param= param.nearest_merge( Hash[*ARGV[3..-1]] )
   puts  "Parametres : " + param.map {|k,v| "%s => %s" % [k,v] }.join(", ")
-  puts r.send(server,request,param) 
+  puts r.csend(server,request,param) 
 end
 end

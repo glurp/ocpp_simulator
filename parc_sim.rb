@@ -10,8 +10,8 @@ require_relative 'cp.rb'
 
 if ARGV.size!=6
   puts "Usage: 
-    > ruby parc.rb  nb ip        port0 path   url_server   nb_connector_by_cp
-    > ruby parc.rb  10 localhost 6060 /ocpp   http://localhost:9090/ocpp  1 2 3 4
+    > ruby parc._simrb  nb ip        port0 path    url_server                  nb_connector_by_cp
+    > ruby parc_sim.rb  10 localhost 6060  /ocpp   http://localhost:9090/ocpp  2
   "
   exit!(1)  
 end
@@ -22,13 +22,11 @@ port0=port0.to_i
 nb_connector_by_cp=nb_connector_by_cp.to_i
 
 
-lcid=(0..nb_connector_by_cp).to_a
-port=port0
+lcid=(1..nb_connector_by_cp).to_a
 lcp=(1..nb).map { |nocp|  
-    Cp.new("ACT%03D" % [port-port0],ip,port,path,url_server,lcid).run 
-    port+=1
+    Cp.new("ACT%03d" % nocp,ip,port0+nocp-1,path,url_server,lcid).run 
 }
 
-trap("INT") { lcp.each { |cp| cp.shutdown } }
+trap("INT") { lcp.each { |cp| cp.shutdown } ; exit!(0)}
 sleep
 

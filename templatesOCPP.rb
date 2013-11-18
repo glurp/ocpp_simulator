@@ -65,9 +65,10 @@ $cs_to_cp={
     req: { "t:connectodId" => "CONID", "t:idTag" => "TAGID"},
     resp: { 
       data: "<SOAP-ENV:Body><ocppCs15:remoteStartTransactionResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:remoteStartTransactionResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>",
-      params: ["TRANSID"] }
+      params: [] }
    },
    "remoteStopTransaction" => {
+    req: { "t:transactionId" => "TRANSACID"},
     resp: { data: "<SOAP-ENV:Body><ocppCs15:remoteStopTransactionResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:remoteStopTransactionResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    }
  }
@@ -90,7 +91,7 @@ $cp_to_cs={
        "IMSI",
        "METERTYPE",
        "METERSN"],
-      ret: {"s:currentTime"=>"TM", "s:heartbeatInterval" => "INTERVAL"}
+      ret: {"t:currentTime"=>"TM", "t:heartbeatInterval" => "INTERVAL"}
    },
    :dataTransfert=>
     {:req=>
@@ -98,6 +99,11 @@ $cp_to_cs={
      params: ["VENDORID", "MESSID", "DATA"],
      ret: {"t:status" => "STATUS"}
       },
+   :hbeat2=>
+    {:req=>
+       '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" xmlns:SOAP-ENC="http://www.w3.org/2003/05/soap-encoding" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ocppCp15="urn://Ocpp/Cp/2012/06/" xmlns:ocppCs15="urn://Ocpp/Cs/2012/06/" xmlns:wsa5="http://www.w3.org/2005/08/addressing"><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand="true">ACT001</ocppCs15:chargeBoxIdentity><wsa5:MessageID>01c9c6-20131108141114117-059415</wsa5:MessageID><wsa5:From><wsa5:Address>http://90.94.144.206:8080/ocpp</wsa5:Address></wsa5:From><wsa5:To SOAP-ENV:mustUnderstand="true">http://ns308363.ovh.net:6060/ocpp</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand="true">/Heartbeat</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:heartbeatRequest></ocppCs15:heartbeatRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>',
+      ret: {"t:timestamp" => "TIME" },
+     :params=>[]},
    :hbeat=>
     {:req=>
       "<SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand=\"true\">HCHARGEBOXID</ocppCs15:chargeBoxIdentity><wsa5:MessageID>HMESSID</wsa5:MessageID><wsa5:From><wsa5:Address>HFROM</wsa5:Address></wsa5:From><wsa5:To SOAP-ENV:mustUnderstand=\"true\">HTO</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand=\"true\">/Heartbeat</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:heartbeatRequest></ocppCs15:heartbeatRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>",

@@ -61,13 +61,19 @@ class ServerSoapOcpp < GServer
     super(config[:port],config[:ip])
     @config=config 
     @app=application
+    puts "Serveur TCP on #{config[:ip]}:#{config[:port]}...."
   end
   def serve(so)
+    serve1(so)
+  rescue Exception => e
+    puts "#{e} :\n  #{e.backtrace.join("\n   ")}"
+  end
+  def serve1(so)
     p "connexion... #{so}"
     http_header=nil; timeout(10) { http_header= so.gets("\r\n\r\n")}
     hheader=http_header.split("\r\n").inject({}) { |h,line| k,v=line.split(': ',2); h[k]=v; h}
     len=hheader["Content-Length"].to_i
-    p "reading #{len}..."
+    puts "reading #{len}..."
     xml=nil; timeout(9) { xml=so.readpartial(len) }
     buff=make_response(hheader,xml)
     unless buff
@@ -89,7 +95,7 @@ class ServerSoapOcpp < GServer
     action0.gsub!(/[\/"']/,'')
     action= action0[0,1].downcase() + action0[1..-1]
     unless @app.respond_to?(action) && $cs_to_cp[:reqs][action]
-      puts "Unknown request : #{action} in application class (or templaes)"
+      puts "Unknown request : #{action} in application class (or templates)"
       return nil
     end
     
@@ -99,8 +105,8 @@ class ServerSoapOcpp < GServer
     #  </soap:Header>
     
     head=data.split(":Header")[1]
-    hreq=head.extract_data({"t:MessageID" => "HMESSID"})
-    hrep=({"HMESSID" => (Time.now.to_f*1000).round,  "HRELMESSIDTO" => hreq["HMESSID"]||"0", "HTO"=> "http://ocpp.server.org"})
+    hreq=head.extract_data({"t:MessageID" => "HMESSID","t:chargeBoxIdentity" => "HCHARGEBOXID"})
+    hrep=({"HMESSID" => (Time.now.to_f*1000).round,  "HRELMESSIDTO" => hreq["HMESSID"]||"0", "HTO"=> "http://ocpp.server.org","HCHARGEBOXID"=>hreq["HCHARGEBOXID"]})
     
     #---------------------        extract desired data from request
     
@@ -111,8 +117,16 @@ class ServerSoapOcpp < GServer
     puts "Request : #{params_req.inspect}"
     
     #---------------------  call application , format response
+    rep={}
+    begin
+      rep=@app.send(action,params_req) 
+      raise("app response is not Hash") unless Hash === rep
+    rescue Exception  => e
+      puts "#{e} : \n  #{e.backtrace.join("\n   ")}"
+      rep={}
+    end
     
-    params_reponse = @app.send(action,params_req) || {}
+    params_reponse = rep 
     h[:resp][:params].each { |k| params_reponse[k]="?" unless params_reponse[k] }  if  h[:resp][:params]
     params_reponse["ACTION"]=action0
     params_reponse=$cs_to_cp[:HEADER].merge(hrep).merge(params_reponse)    

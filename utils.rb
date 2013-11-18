@@ -25,6 +25,7 @@ class String
           when "a" then  self[/ #{name}=['"]([^'"]*)['"]/,1]
           when "t" then  self[/<(\w+:)?#{name}.*?>([^<]*)<\//,2]
           else
+             puts "extract_data : UNKNOWN selector : :#{type}"
             "?"
         end
         ret[v]=value
@@ -58,7 +59,13 @@ class String
     end
     d[m][n]
   end
-  def showXmlData(txt="data :")
-    puts "#{txt} << \n  "+self.scan(/<([^>]+)>([^<]+)<\//).map { |a| "%-30s %s" % [a.first.split(/\s+/).first,a.last.strip] }.join("\n  ")+"\n>>"
-  end  
+  if $DEBUG
+    def showXmlData(txt="data :")
+      puts "#{txt} << \n  "+self.scan(/<([^>]+)>([^<]+)<\//).map { |a| "%-30s %s" % [a.first.split(/\s+/).first,a.last.strip] }.join("\n  ")+"\n>>"
+    end  
+  else
+    def showXmlData(txt="data :")
+      puts "#{txt} << "+self.scan(/<([^>]+)>([^<]+)<\//).map { |a| "%s=%s" % [a.first.split(/\s+/).first.split(":").last,a.last.strip] }.join("  ")+">>"
+    end  
+  end
 end
