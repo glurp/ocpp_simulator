@@ -99,7 +99,14 @@ What is missing:
 Parc_sim
 ========
 Create a bunch of ChargePoint
-       > ruby parc._simrb  nb ip  port0 path  url_server  nb_connector_by_cp
+
+       > ruby parc_sim.rb  nbChargePoint  ip  port0 path  url_server  nb_connector_by_cp
+       > ruby parc.rb  10 localhost 6060 /ocpp   http://localhost:9090/ocpp  1 2 3 4
+
+This will create :
+* 10 chargePoints, 4 connector on each, 
+* first ChargePoint will use port 6060, seconde 6061 .. and so on
+* all cp will send data to asoap server a locolhost:9090/ocpp
 
 Configuration
 =============
