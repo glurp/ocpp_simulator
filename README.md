@@ -80,7 +80,6 @@ data : <<
 CP : simulation of a ChargePoint
 === 
 Usage: 
-  >             /-------cp side:ip adress----\ /---serv ip---\            -- Connector list --
   > ruby cp.rb  name    ip        port path    url_server                  c1 c2 c3...
   > ruby cp.rb  SIEM001 localhost 6061 /ocpp   http://localhost:9090/ocpp  1 2 3 4
 
