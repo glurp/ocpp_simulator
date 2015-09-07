@@ -102,7 +102,7 @@ class PostSoap
     if rep
        rep.extract_data($cp_to_cs[:config][request][:ret]||{})
     else
-       {}
+       rep
     end
   end
 

@@ -5,3 +5,4 @@ client.rb http://ns308454.org:6060/ocpp  CB1000 startTransaction CONID 1 METERST
 client.rb http://ns308454.org:6060/ocpp  CB1000 meterValue CONID 1 VALUE 24
 client.rb http://ns308454.org:6060/ocpp  CB1000 stopTransaction TRANSACID 801  METERSTOP  22 TIMESTAMP 2013-12-12T24:23:23
 client.rb http://ns308454.org:6060/ocpp  CB1000 hbeat
+"ruby cp.rb  TEST1 localhost 7780 /ocpp http://ns308363.ovh.net:6060/ocpp  1 2" 

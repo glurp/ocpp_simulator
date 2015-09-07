@@ -292,7 +292,7 @@ end
 if $0 == __FILE__ 
   if ARGV.size >= 6
     th=Cp.new(ARGV[0],ARGV[1],ARGV[2],ARGV[3],ARGV[4],ARGV[5..-1]).run
-    th.join()
+    sleep
   else
     puts "Usage:
     > ruby cp.rb  name   ip        port path    url_server                  c1 c2 c3...
