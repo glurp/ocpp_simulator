@@ -12,7 +12,7 @@ SOAP is used via xml templates, so this gem do not depend on any soap stack ...
 * cp.rb : simulate one Charge Point with multiple connectorId, use client.rb and serveur.rb for 
   scada dialogs, make some start/stop transactions, some notifications.
 * parc_sim.rb : simulate a set of charge point.
- 
+* hmi_test.rb : simple forms/command for test commnunications beetwieen a CHargeboxId and a suepervisor
 
 Client
 ======
