@@ -52,14 +52,17 @@ require 'readline'
 require_relative './templatesOCPP.rb'
 
 class PostSoap
-  def initialize(config) @config=config end
+  def initialize(config) 
+    @config=config 
+  end
   def format(request,hparam) 
     namespaces='xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" xmlns:SOAP-ENC="http://www.w3.org/2003/05/soap-encoding" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ocppCp15="urn://Ocpp/Cp/2012/06/" xmlns:ocppCs15="urn://Ocpp/Cs/2012/06/" xmlns:wsa5="http://www.w3.org/2005/08/addressing"'
     buff= $cp_to_cs[:config][request][:req].dup
-    @config.each { |k,value| buff.sub!(k,value) }
+    @config.each { |k,value| buff.sub!(k,value.to_s) }
     buff.sub!(/<SOAP-ENV:Envelope\s+></,'<SOAP-ENV:Envelope '+namespaces+'><')
     buff.sub!(/(#{@config["HMESSID"]})/,"#{(Time.now.to_f*1000).round}")
     hparam.each { |k,value| buff.sub!(k,value.to_s) }
+    buff.gsub!(/<wsa5:From>.*?<\/wsa5:From>/,"")    if @config["nonFrom"]
     buff
   end
   def format_http(server,request,hparam)

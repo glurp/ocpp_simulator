@@ -10,9 +10,8 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
   @lastTransactionId=nil
 	stack do
 		stacki do
-      ctx=make_StockDynObject("ee",{"cp" => "TEST1" , "cs" => "http://ns308363.ovh.net:6060/ocpp" ,"con"=>"1"})
-      p ctx
-      p ctx.cp
+      ctx=make_StockDynObject("ee",{"cp" => "TEST1" , "cs" => "http://ns308363.ovh.net:6060/ocpp" ,"con"=>"1","nonfrom"=>"0"})
+      ctx.nonfrom.value= (ctx.nonfrom.value && ctx.nonfrom.value=="1")
 			table(0,0) { 
         row {
           cell_right(label "ChargeboxId : ")
@@ -21,6 +20,9 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
               label("Connecteur :") ; combo(%w{C01 C02 C03 C04},ctx.con.value.to_i) {|text,index| ctx.con.value=index+1}
             }})
         next_row
+          cell_right(label "")
+          cell_hspan(3,check_button("pas de champ from",DynVar.stock("non from",ctx.nonfrom)))
+         next_row          
           cell_right(label "Server : ")
           @srv=cell_hspan(3,entry(ctx.cs,10,{font: 'Courier 10'}))
         next_row
@@ -49,7 +51,7 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
         }
       }
 		end
-		@log=text_area(100,100,{font: 'Courier 8', bg: "#004444", fg: "#FFF"})
+		@log=text_area(100,100,{font: 'Courier 8', bg: "#FFF", fg: "#000"})
     flowi { button("Clear log") { @log.text=""} ; buttoni("Exit") { exit(0) } } 
 	end
   def logg(*t) @log.append  t.join(" ")+"\n" end
@@ -59,9 +61,12 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
       logg "request #{request} unknown !"
       logg"Should be one of #{$cp_to_cs[:config].keys.map(&:to_s).join(", ")}"
     end
-    r=PostSoap.new("HCHARGEBOXID"=>ctx.cp.value, 
+    conf={"HCHARGEBOXID"=>ctx.cp.value, 
          "HMESSID"=>"A%", "HFROM"=>"http://localhost:9090/ocpp", 
-         "HTO"=>"http://you.com")
+         "HTO"=>"http://you.com"
+    }
+    conf["nonFrom"]=true if ctx.nonfrom
+    r=PostSoap.new(conf)
      h=$cp_to_cs[:config][request]
      param= h[:params].inject({}) { |h,k| h[k] = rand(100000).to_s ; h}
      param= param.nearest_merge( default_params(request).merge({"CONID"=>ctx.con.value.to_s}) )     
