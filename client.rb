@@ -46,75 +46,21 @@
 #
 ######################################################################################
 
-require 'socket'
-require 'timeout'
 require 'readline'
 require_relative './templatesOCPP.rb'
+require_relative 'client_soap.rb'
 
-class PostSoap
-  def initialize(config) 
-    @config=config 
-  end
-  def format(request,hparam) 
-    namespaces='xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" xmlns:SOAP-ENC="http://www.w3.org/2003/05/soap-encoding" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ocppCp15="urn://Ocpp/Cp/2012/06/" xmlns:ocppCs15="urn://Ocpp/Cs/2012/06/" xmlns:wsa5="http://www.w3.org/2005/08/addressing"'
-    buff= $cp_to_cs[:config][request][:req].dup
-    @config.each { |k,value| buff.sub!(k,value.to_s) }
-    buff.sub!(/<SOAP-ENV:Envelope\s+></,'<SOAP-ENV:Envelope '+namespaces+'><')
-    buff.sub!(/(#{@config["HMESSID"]})/,"#{(Time.now.to_f*1000).round}")
-    hparam.each { |k,value| buff.sub!(k,value.to_s) }
-    buff.gsub!(/<wsa5:From>.*?<\/wsa5:From>/,"")    if @config["nonFrom"]
-    buff
-  end
-  def format_http(server,request,hparam)
-    data=format(request,hparam)
-    action=data[/>([^<]+)<\/wsa5:Action>/,1]
-    "POST #{server} HTTP/1.1\r\nAccept-Encoding: gzip,deflate\r\nContent-Type: application/soap+xml;charset=UTF-8;action=\"#{action}\"\r\n"+
-         "Content-Length: #{data.size}\r\nHost: localhost:6062\r\nConnection: close\r\nUser-Agent: soap-ocpp-sim"+
-         "\r\n\r\n#{data}"
-         
-  end
-  def http_post(server,buff)
-    ip=server[/http:\/\/([^:]+):(\d+)\/.*/,1]
-    port=server[/http:\/\/([^:]+):(\d+)\/.*/,2]
-    so=TCPSocket.new(ip,port)
-    so.sync=true
-    so.write(buff)
-    buff.showXmlData("Soap Request:")
-    head=so.gets("\r\n\r\n")
-    #puts "\n\header received : " + head.gsub("\r\n"," / ")
-    len= head[/Content-Length: (\d+)\r\n/,1]
-    #rep=so.recv(len.to_i)
-    rep=nil
-    timeout(10) { rep=so.read }
-    so.close rescue nil
-    #puts "response : #{rep}"
-    rep.showXmlData("Soap Response :")
-    rep
-  rescue Errno::ECONNREFUSED => e
-    puts "Echec Connection => #{ip}:#{port} "
-    nil
-  rescue Exception => e
-    puts "#{e} #{e.class} :\n   #{e.backtrace.join("\n   ")}"
-    nil
-  end
-  def csend(server,request,hparam)
-    raise("Unknown OCPP request : #{request}")  unless $cp_to_cs[:config][request]
-    buff=format_http(server,request,hparam)
-    puts buff if $DEBUG
-    rep=http_post(server,buff)
-    if rep
-       rep.extract_data($cp_to_cs[:config][request][:ret]||{})
-    else
-       rep
+class PostSoapCs < ClientSoap
+    NAMESPACES='xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" xmlns:SOAP-ENC="http://www.w3.org/2003/05/soap-encoding" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ocppCp15="urn://Ocpp/Cp/2012/06/" xmlns:ocppCs15="urn://Ocpp/Cs/2012/06/" xmlns:wsa5="http://www.w3.org/2005/08/addressing"'
+    def initialize(config)
+       super($cp_to_cs,NAMESPACES,config)
     end
-  end
-
 end
 
 if $0==__FILE__
 if ARGV.size==0
   server="http://localhost:6060/ocpp"  
-  r=PostSoap.new("HCHARGEBOXID"=>"CB1000", "HMESSID"=>"A%", "HFROM"=>"http://localhost:9090/ocpp", "HTO"=>"you")
+  r=PostSoapCs.new("HCHARGEBOXID"=>"CB1000", "HMESSID"=>"A%", "HFROM"=>"http://localhost:9090/ocpp", "HTO"=>"you")
   $cp_to_cs[:config].each { |name,h| 
     param= h[:params].inject({}) { |h,k| h[k] = rand(100000).to_s ; h}
     param["CONID"]=1 if param["CONID"]
@@ -133,7 +79,7 @@ else
     puts "Should be one of #{$cp_to_cs[:config].keys.map(&:to_s).join(", ")}"
     exit(0)
   end
-  r=PostSoap.new("HCHARGEBOXID"=>ARGV[1], "HMESSID"=>"A%", "HFROM"=>"http://localhost:9090/ocpp", "HTO"=>"http://you.com")
+  r=PostSoapCs.new("HCHARGEBOXID"=>ARGV[1], "HMESSID"=>"A%", "HFROM"=>"http://localhost:9090/ocpp", "HTO"=>"http://you.com")
   h=$cp_to_cs[:config][request]
   param= h[:params].inject({}) { |h,k| h[k] = rand(100000).to_s ; h}
   param= param.nearest_merge( Hash[*ARGV[3..-1]] )
