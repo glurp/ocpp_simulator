@@ -5,12 +5,13 @@ Simulator of a Charge Point via OCPP protocol
 
 SOAP is used via xml templates, so this gem do not depend on any soap stack ...
 
-4 usages :
+5 usages :
 * client.rb : invoke CP->CS dialog. Alone can invoke a SOAP request to a scada
 * server.rb : serve a CS->CP dialog. Alone it print request/responses,  responses are always status=Accepted. 
               server api : invoke a client callback foreach request received
 * cp.rb : simulate one Charge Point with multiple connectorId, use client.rb and serveur.rb for 
   scada dialogs, make some start/stop transactions, some notifications.
+* tc.rb : client as scada: send commandes to chargePoints
 * parc_sim.rb : simulate a set of charge point.
 * hmi_test.rb : simple forms/commands  tests a chargeBoxId in a ocpp scada
 
@@ -26,6 +27,9 @@ Examples :
     >ruby client.rb  http://ns8363.ovh.net:6060/ocpp   CB1000 startTransaction CONID 1
     >ruby client.rb  http://ns8363.ovh.net:6060/ocpp   CB1000 startTransaction CONID 1 TAGID 11223344
     >ruby client.rb  http://ns8363.ovh.net:6060/ocpp   CB1000 stopTransaction TRANSACTIONID 818101 
+
+    >ruby client.rb  http://localhost:8080/ocpp   CB1000 reset  TYPE Hard 
+    >ruby client.rb  http://localhost:8080/ocpp   CB1000 remoteStopTransaction  TRANSACTIONID 818101 
 
     >ruby  server.rb  8080 &
 

@@ -10,18 +10,31 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
   @lastTransactionId=nil
 	stack do
 		stacki do
-      ctx=make_StockDynObject("ee",{"cp" => "TEST1" , "cs" => "http://ns308363.ovh.net:6060/ocpp" ,"con"=>"1","nonfrom"=>"0"})
+      ctx=make_StockDynObject("ee",{"cp" => "TEST1" , "cs" => "http://ns308363.ovh.net:6060/ocpp" ,"con"=>"1","nonfrom"=>"0","isPeriode"=>false, "periode"=>10})
+      @ctx=ctx
       ctx.nonfrom.value= (ctx.nonfrom.value && ctx.nonfrom.value=="1")
 			table(0,0) { 
         row {
           cell_right(label "ChargeboxId : ")
           @cp=cell_hspan(3,box { flow {
               @cp=entry(ctx.cp,10,{font: 'Courier 10'})
-              label("Connecteur :") ; combo(%w{C01 C02 C03 C04},ctx.con.value.to_i) {|text,index| ctx.con.value=index+1}
+              label("Connecteur :")
+              combo(%w{C01 C02 C03 C04},ctx.con.value.to_i) {|text,index| 
+                 ctx.con.value=index+1
+              }
             }})
         next_row
           cell_right(label "")
-          cell_hspan(3,check_button("pas de champ from",DynVar.stock("non from",ctx.nonfrom)))
+          cell_hspan(1,check_button("pas de champ from",ctx.nonfrom))
+          cell_hspan(2,box do
+            frame("Cyclique") do
+              flow do 
+                check_button("emission periodique",ctx.isPeriode)
+                separator
+                label("periode (ms) :");entry(ctx.periode,5)
+              end
+            end
+          end)
          next_row          
           cell_right(label "Server : ")
           @srv=cell_hspan(3,entry(ctx.cs,10,{font: 'Courier 10'}))
@@ -31,14 +44,15 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
 			    cell(button("MeterValues",bg: "#AA88AA")       { ocpp_send(ctx,:meterValue)})
 			    cell(button("StatusNotif.",bg: "#AAAAAA"){ ocpp_send(ctx,:statusNotification)})
         next_row
-			    cell(button("Start Tr.") { ocpp_send(ctx,:startTransaction) })
-          cell(button("Stop Tr.")  { ocpp_send(ctx,:stopTransaction)  })
-          cell(button("Ok ?")  {
-                Open3.popen3("C:/Program Files (x86)/PuTTY/plink.exe",
-                  "-load","tiles","lcharge0") { |fin,fout,ferr| 
-                    logg fout.read 
-                }
-          })
+			    cell(button("Start") { ocpp_send(ctx,:startTransaction) })
+          cell(button("Stop")  { ocpp_send(ctx,:stopTransaction)  })
+          cell(button("Boot")  { ocpp_send(ctx,:bootNotification)  })
+          # cell(button("Ok ?")  {
+                # Open3.popen3("C:/Program Files (x86)/PuTTY/plink.exe",
+                  # "-load","tiles","lcharge0") { |fin,fout,ferr| 
+                    # logg fout.read 
+                # }
+          # })
           cell(button("lcharge?")  {
                 Thread.new {Open3.popen3("C:/Program Files (x86)/PuTTY/plink.exe",
                   "-load","tiles","lcharge") { |fin,fout,ferr|
@@ -55,6 +69,9 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
     flowi { button("Clear log") { @log.text=""} ; buttoni("Exit") { exit(0) } } 
 	end
   def logg(*t) @log.append  t.join(" ")+"\n" end
+  def mess(request)
+    ocpp_send(@ctx,request)
+  end
   def ocpp_send(ctx,request,params={})
     logg("<<<<<#{request} from #{ctx.cp.value} ==>  #{ctx.cs.value}")
     unless $cp_to_cs[:config][request]
@@ -75,11 +92,25 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
      logg ret.inspect
      logg "."
   end
-  
+  @top=0
+  @ctx.isPeriode.value=false
+  anim(100) do
+    @top+=1
+    #log [@top,@ctx.isPeriode.value,@ctx.periode.value.to_i].inspect
+    if @ctx.isPeriode.value
+       if (@top % (@ctx.periode.value.to_i/100))==0
+          logg "sending..."
+          ocpp_send(@ctx,:hbeat) 
+       end
+    end
+  end
   def nowRfc() Time.now.utc.round.iso8601(3) end
   def default_params(request)
     { 
       hbeat:                 {},
+      bootNotification:      {"VENDOR"=> "Actemium", "MODEL"=> "A1","CPSN"=> "0","CBSN"=> "","VERSION"=>"0.0.1",
+                            "ICCID"=> "0000","IMSI" => "0000", "METERTYPE" =>"KW", "METERSN"=>""
+                },
       statusNotification:    {"STATUS"=>"Occupied","ERRORCODE" => "NoError","TIMESTAMP" => nowRfc()},
       authorize:             {"TAGID"=> "12345678"},
       startTransaction:      {"TAGID"=> "12345678","TIMESTAMP"=> nowRfc() ,"METERSTART"=> 0},
