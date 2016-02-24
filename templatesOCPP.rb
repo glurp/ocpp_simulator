@@ -74,6 +74,32 @@ $cs_to_cp={
  }
 }
 
+$client_cs_to_cp={
+ :HEADER=>{"ACTION" => "?" , "HCHARGEBOXID"=>"?", "HMESSID"=>"?", "HTO"=> "?"},
+ :config=>
+  {  :reset =>
+    {:req=> '<soap:Envelope ><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/Reset</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><resetRequest xmlns="urn://Ocpp/Cp/2012/06/"><type>TYPE</type></resetRequest></soap:Body></soap:Envelope>',
+     params: ["TYPE"],
+     ret: {"t:status" => "STATUS" },
+     },
+  :remoteStopTransaction => {:req=> 
+  '<soap:Envelope ><soap:Header><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/RemoteStopTransaction</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><remoteStopTransactionRequest xmlns="urn://Ocpp/Cp/2012/06/"><transactionId>TRANSACID</transactionId></remoteStopTransactionRequest></soap:Body></soap:Envelope>',
+     params: ["TRANSACID"],
+     ret: {"t:status" => "STATUS" },
+     },
+  :changeConfiguration  =>{:req=> 
+  '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/ChangeConfiguration</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><changeConfigurationRequest xmlns="urn://Ocpp/Cp/2012/06/"><key>KEY</key><value>VALUE</value></changeConfigurationRequest></soap:Body></soap:Envelope>
+',
+     params: ["KEY","VALUE"],
+     ret: {"t:status" => "STATUS" },
+     },
+    :name  =>  {:req=> '',
+     params: [],
+     ret: {"t:status" => "STATUS" },
+     }
+  }
+}
+
 
 $cp_to_cs={
  :HEADER=>{"ID"=>"", "HMESSID"=>"", "HFROM"=>"", "HTO"=>""},
@@ -110,7 +136,7 @@ $cp_to_cs={
      :params=>[]},
    :authorize=>
     {:req=>
-      "<SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand=\"true\">HCHARGEBOXID</ocppCs15:chargeBoxIdentity><wsa5:MessageID>HMESSID</wsa5:MessageID><wsa5:From><wsa5:Address>HFROM</wsa5:Address></wsa5:From><wsa5:To SOAP-ENV:mustUnderstand=\"true\">HTO</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand=\"true\">/Authorize</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:authorizeRequest><ocppCs15:idTag>IDTAG</ocppCs15:idTag></ocppCs15:authorizeRequest></SOAP-ENV:Body></SOAP-ENV:Envelope><SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand=\"true\">gir.vat.mx.014de1</ocppCs15:chargeBoxIdentity><wsa5:MessageID>014de1-20131008112208256-708903</wsa5:MessageID><wsa5:From><wsa5:Address>http://81.56.166.41:8080/ocpp/</wsa5:Address></wsa5:From><wsa5:To SOAP-ENV:mustUnderstand=\"true\">http://www5.gir.fr/cli-sab-M012354-dbt_demo-v2/ocpp15</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand=\"true\">/Authorize</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:authorizeRequest><ocppCs15:idTag>D01ADA94</ocppCs15:idTag></ocppCs15:authorizeRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "<SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand=\"true\">HCHARGEBOXID</ocppCs15:chargeBoxIdentity><wsa5:MessageID>HMESSID</wsa5:MessageID><wsa5:From><wsa5:Address>HFROM</wsa5:Address></wsa5:From><wsa5:To SOAP-ENV:mustUnderstand=\"true\">HTO</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand=\"true\">/Authorize</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:authorizeRequest><ocppCs15:idTag>IDTAG</ocppCs15:idTag></ocppCs15:authorizeRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>",
      params: ["IDTAG"],
      ret: {"t:status" => "TRANSACID" },
      },
