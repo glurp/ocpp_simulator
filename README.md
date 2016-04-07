@@ -7,8 +7,9 @@ SOAP is used via xml templates, so this gem do not depend on any soap stack ...
 
 5 usages :
 * client.rb : invoke CP->CS dialog. Alone can invoke a SOAP request to a scada
-* server.rb : serve a CS->CP dialog. Alone it print request/responses,  responses are always status=Accepted. 
+* server.rb : serve a CS->CP dialog, as CP. Alone it print request/responses,  responses are always status=Accepted. 
               server api : invoke a client callback foreach request received
+              see tc.rb for simulate CS
 * cp.rb : simulate one Charge Point with multiple connectorId, use client.rb and serveur.rb for 
   scada dialogs, make some start/stop transactions, some notifications.
 * tc.rb : client as scada: send commandes to chargePoints
