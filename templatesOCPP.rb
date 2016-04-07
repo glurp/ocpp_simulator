@@ -78,7 +78,7 @@ $client_cs_to_cp={
  :HEADER=>{"ACTION" => "?" , "HCHARGEBOXID"=>"?", "HMESSID"=>"?", "HTO"=> "?"},
  :config=>
   {  :reset =>
-    {:req=> '<soap:Envelope ><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/Reset</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><resetRequest xmlns="urn://Ocpp/Cp/2012/06/"><type>TYPE</type></resetRequest></soap:Body></soap:Envelope>',
+    {:req=> '<soap:Envelope ><soap:Header><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/Reset</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><resetRequest xmlns="urn://Ocpp/Cp/2012/06/"><type>TYPE</type></resetRequest></soap:Body></soap:Envelope>',
      params: ["TYPE"],
      ret: {"t:status" => "STATUS" },
      },
@@ -88,12 +88,26 @@ $client_cs_to_cp={
      ret: {"t:status" => "STATUS" },
      },
   :changeConfiguration  =>{:req=> 
-  '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/ChangeConfiguration</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><changeConfigurationRequest xmlns="urn://Ocpp/Cp/2012/06/"><key>KEY</key><value>VALUE</value></changeConfigurationRequest></soap:Body></soap:Envelope>
+  '<soap:Envelope ><soap:Header><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/ChangeConfiguration</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><changeConfigurationRequest xmlns="urn://Ocpp/Cp/2012/06/"><key>KEY</key><value>VALUE</value></changeConfigurationRequest></soap:Body></soap:Envelope>
 ',
      params: ["KEY","VALUE"],
      ret: {"t:status" => "STATUS" },
      },
-    :name  =>  {:req=> '',
+   :remoteStartTransaction  =>  {:req=>
+   '<soap:Envelope ><soap:Header><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/RemoteStartTransaction</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><remoteStartTransactionRequest xmlns="urn://Ocpp/Cp/2012/06/"><idTag>TAGID</idTag><connectorId>CONID</connectorId></remoteStartTransactionRequest></soap:Body></soap:Envelope>',
+     params: ["CONID","TAGID"],
+     ret: {"t:status" => "STATUS" },
+     },
+    :unlockConnector  =>  {:req=> '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/UnlockConnector</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><unlockConnectorRequest xmlns="urn://Ocpp/Cp/2012/06/"><connectorId>CONID</connectorId></unlockConnectorRequest></soap:Body></soap:Envelope>',
+     params: ["CONID"],
+     ret: {"t:status" => "STATUS" },
+     },
+    :changeAvailability  =>  {:req=> '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header><chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">HCHARGEBOXID</chargeBoxIdentity><Action xmlns="http://www.w3.org/2005/08/addressing">/ChangeAvailability</Action><MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:HMESSID</MessageID><To xmlns="http://www.w3.org/2005/08/addressing">HTO</To><ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><changeAvailabilityRequest xmlns="urn://Ocpp/Cp/2012/06/"><connectorId>CONID</connectorId><type>TYPE</type></changeAvailabilityRequest></soap:Body></soap:Envelope>',
+     params: ["CONID","TYPE"], # Operative/Inoperative
+     ret: {"t:status" => "STATUS" },
+     },
+    :clearCache  =>  {:req=> '<env:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:ns1="urn://Ocpp/Cp/2012/06/" xmlns:ns2="http://www.w3.org/2005/08/addressing"><env:Header><ns2:MessageID>urn:uuid:HMESSID</ns2:MessageID><ns2:To env:mustUnderstand="true">HTO</ns2:To><ns2:From env:mustUnderstand="true">HFROM</ns2:From><ns1:chargeBoxIdentity>HCHARGEBOXID</ns1:chargeBoxIdentity><ns2:Action>/ClearCache</ns2:Action></env:Header><env:Body><ns1:clearCacheRequest/></env:Body></env:Envelope>
+',
      params: [],
      ret: {"t:status" => "STATUS" },
      }
@@ -136,12 +150,14 @@ $cp_to_cs={
      :params=>[]},
    :authorize=>
     {:req=>
-      "<SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand=\"true\">HCHARGEBOXID</ocppCs15:chargeBoxIdentity><wsa5:MessageID>HMESSID</wsa5:MessageID><wsa5:From><wsa5:Address>HFROM</wsa5:Address></wsa5:From><wsa5:To SOAP-ENV:mustUnderstand=\"true\">HTO</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand=\"true\">/Authorize</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:authorizeRequest><ocppCs15:idTag>IDTAG</ocppCs15:idTag></ocppCs15:authorizeRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "<SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand=\"true\">HCHARGEBOXID</ocppCs15:chargeBoxIdentity><wsa5:MessageID>HMESSID</wsa5:MessageID><wsa5:From>HFROM</wsa5:From><wsa5:To SOAP-ENV:mustUnderstand=\"true\">HTO</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand=\"true\">/Authorize</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:authorizeRequest><ocppCs15:idTag>IDTAG</ocppCs15:idTag></ocppCs15:authorizeRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>",
      params: ["IDTAG"],
      ret: {"t:status" => "TRANSACID" },
      },
-   :meterValue=>
-    {:req=>
+    :meterValue=>   {:req=>    '<SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity>HCHARGEBOXID</ocppCs15:chargeBoxIdentity><wsa5:MessageID>urn:uuid:HMESSID</wsa5:MessageID><wsa5:From><wsa5:Address>HFROM</wsa5:Address></wsa5:From><wsa5:ReplyTo><wsa5:Address>http://www.w3.org/2005/08/addressing/anonymous</wsa5:Address></wsa5:ReplyTo><wsa5:To SOAP-ENV:mustUnderstand="true">HTO</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand="true">/MeterValues</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:meterValuesRequest><ocppCs15:connectorId>CONID</ocppCs15:connectorId><ocppCs15:transactionId>TRANSACTID</ocppCs15:transactionId><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value>VALUE</ocppCs15:value><ocppCs15:value>VALUE</ocppCs15:value><ocppCs15:value>VALUE</ocppCs15:value><ocppCs15:value>VALUE</ocppCs15:value></ocppCs15:values><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value unit="Wh" location="Outlet" measurand="Energy.Active.Import.Register" format="Raw" context="Sample.Periodic">VALUE</ocppCs15:value></ocppCs15:values><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value unit="Wh" location="Outlet" measurand="Energy.Active.Import.Register" format="Raw" context="Sample.Periodic">VALUE</ocppCs15:value></ocppCs15:values><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value unit="Wh" location="Outlet"  format="Raw" >VALUE</ocppCs15:value></ocppCs15:values><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value unit="Wh" location="Outlet" measurand="Energy.Active.Import.Register" format="Raw" context="Sample.Periodic">VALUE</ocppCs15:value></ocppCs15:values><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value unit="Wh" location="Outlet" measurand="Energy.Active.Import.Register" format="Raw" context="Sample.Periodic">VALUE</ocppCs15:value></ocppCs15:values><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value unit="Wh" location="Outlet" measurand="Energy.Active.Import.Register"  context="Sample.Periodic">VALUE</ocppCs15:value></ocppCs15:values><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value unit="Wh" location="Outlet" measurand="Energy.Active.Import.Register" format="Raw" context="Sample.Periodic">VALUE</ocppCs15:value></ocppCs15:values><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value unit="Wh" location="Outlet" measurand="Energy.Active.Import.Register"  context="Sample.Periodic">VALUE</ocppCs15:value></ocppCs15:values><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value unit="Wh" location="Outlet" measurand="Energy.Active.Import.Register" format="Raw" context="Sample.Periodic">VALUE</ocppCs15:value></ocppCs15:values></ocppCs15:meterValuesRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>',
+     :params=>["CONID", "TRANSACTID", "TIMESTAMP", "VALUE"]
+    },
+    :meterValue2=>   {:req=>
       "<SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand=\"true\">HCHARGEBOXID</ocppCs15:chargeBoxIdentity><wsa5:MessageID>HMESSID</wsa5:MessageID><wsa5:From><wsa5:Address>HFROM</wsa5:Address></wsa5:From><wsa5:To SOAP-ENV:mustUnderstand=\"true\">HTO</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand=\"true\">/MeterValues</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:meterValuesRequest><ocppCs15:connectorId>CONID</ocppCs15:connectorId><ocppCs15:transactionId>TRANSACTID</ocppCs15:transactionId><ocppCs15:values><ocppCs15:timestamp>TIMESTAMP</ocppCs15:timestamp><ocppCs15:value>VALUE</ocppCs15:value></ocppCs15:values></ocppCs15:meterValuesRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>",
      :params=>["CONID", "TRANSACTID", "TIMESTAMP", "VALUE"]},
    :meterValues=>

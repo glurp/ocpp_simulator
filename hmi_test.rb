@@ -1,17 +1,101 @@
 require 'Ruiby'
 require_relative 'client'
+require_relative 'server'
 require 'time'
 require 'open3'
+
 class Object
   def puts(*t) $app.instance_eval { logg("  >",*t) } end
 end
+module Ruiby_dsl
+  def logg(*t) $stdout.puts t.join(" "); @log.append  t.join(" ")+"\n" end
+end
+
+##################### Server Ocpp ###################
+
+class Application 
+  include AppliAbstract
+  def initialize(port)
+    server="http://0.0.0.0:#{port}/ocpp"
+    @port=port
+    @s=ServerSoapOcpp.new(self,{:ip=> "0.0.0.0" , :port=> port})
+    @s.start
+  end
+  def remoteStartTransaction(hpara)   {"TRANSID"=> Time.now.to_i} end
+  def remoteStopTransaction(hpara)   {} end
+  def stop() @s.shutdown() ; puts "Ocpp Server is killed!!"end
+  def wait() @s.join end
+end
+
+module Ruiby_dsl
+  def reinit_serveur(url)
+    if defined?(@appOcpp) && @appOcpp!=nil
+      @appOcpp.stop
+    end
+    @portServeur=url.scan(/:\d\d+/).first[1..-1].to_i
+    @appOcpp=::Application.new(@portServeur)
+  end
+end
+
+################## client OCPP => scada ##############################
+
+module Ruiby_dsl
+  def mess(request)
+    ocpp_send(@ctx,request)
+  end
+  def ocpp_send(ctx,request,params={})
+    logg("<<<<<#{request} from #{ctx.cp.value} ==>  #{ctx.cs.value}")
+    unless $cp_to_cs[:config][request]
+      logg "request #{request} unknown !"
+      logg"Should be one of #{$cp_to_cs[:config].keys.map(&:to_s).join(", ")}"
+    end
+    conf={"HCHARGEBOXID"=>ctx.cp.value, 
+         "HMESSID"=>"A%", 
+         "HFROM"=>@ctx.url.value, 
+         "HTO"=> @ctx.cs.value
+    }
+    conf["nonFrom"]=true if ctx.nonfrom
+    r=PostSoapCs.new(conf)
+    h=$cp_to_cs[:config][request]
+    param= h[:params].inject({}) { |h,k| h[k] = rand(100000).to_s ; h}
+    param= param.nearest_merge( default_params(request).merge({"CONID"=>ctx.con.value.to_s}) )     
+    Thread.new {
+      ret=r.csend(ctx.cs.value,request,param) 
+      gui_invoke { 
+        @lastTransactionId=ret["TRANSACID"] if ret
+        logg ret.inspect
+        logg "."
+      }
+    }
+  end
+  def nowRfc() Time.now.utc.round.iso8601(3) end
+  def default_params(request)
+    { 
+      hbeat:                 {},
+      bootNotification:      {"VENDOR"=> "Actemium", "MODEL"=> "A1","CPSN"=> "0","CBSN"=> "","VERSION"=>"0.0.1",
+                            "ICCID"=> "0000","IMSI" => "0000", "METERTYPE" =>"KW", "METERSN"=>""
+                },
+      statusNotification:    {"STATUS"=>"Occupied","ERRORCODE" => "NoError","TIMESTAMP" => nowRfc()},
+      authorize:             {"TAGID"=> "12345678"},
+      startTransaction:      {"TAGID"=> "12345678","TIMESTAMP"=> nowRfc() ,"METERSTART"=> 0},
+      stopTransaction:       {"TRANSACTIONID"=>@lastTransactionId||"101",
+                              "TAGID"=> "12345678","TIMESTAMP"=> nowRfc(),"METERSTOP"=> 100},
+      meterValue:            {"VALUE"=>Time.now.to_i % 1000, 
+         "TRANSACTID" => (@lastTransactionId).to_s, "TIMESTAMP" => nowRfc()},
+    }[request]
+  end
+end
+
+################################## Main window ##############################
+
 Ruiby.app width: 800, height: 400, title: "Test config borne" do
   $app=self
   @lastTransactionId=nil
+  ctx=make_StockDynObject("ee",{"cp" => "TEST1" , "cs" => "http://ns308363.ovh.net:6060/ocpp" ,"con"=>"1","nonfrom"=>"0","isPeriode"=>false, "periode"=>10, "url" => "http://localhost:6161"})
+  @ctx=ctx
+  after(0) { reinit_serveur(@ctx.url.value) }
 	stack do
 		stacki do
-      ctx=make_StockDynObject("ee",{"cp" => "TEST1" , "cs" => "http://ns308363.ovh.net:6060/ocpp" ,"con"=>"1","nonfrom"=>"0","isPeriode"=>false, "periode"=>10})
-      @ctx=ctx
       ctx.nonfrom.value= (ctx.nonfrom.value && ctx.nonfrom.value=="1")
 			table(0,0) { 
         row {
@@ -36,8 +120,14 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
             end
           end)
          next_row          
-          cell_right(label "Server : ")
+          cell_right(label "Supervision : ")
           @srv=cell_hspan(3,entry(ctx.cs,10,{font: 'Courier 10'}))
+         next_row          
+          cell_right(label "Serveur OCPP : ")
+          cell_hspan(2,@ocpp=entry(ctx.url,10,{font: 'Courier 10'}))
+          cell(button("Change") {
+            reinit_serveur(@ocpp.text)
+          })
         next_row
           cell(button("Cdg",bg: "#FFAABB")    { ocpp_send(ctx,:hbeat)     })
           cell(button("Authorize",bg: "#AABBFF")         { ocpp_send(ctx,:authorize) })
@@ -47,12 +137,6 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
 			    cell(button("Start") { ocpp_send(ctx,:startTransaction) })
           cell(button("Stop")  { ocpp_send(ctx,:stopTransaction)  })
           cell(button("Boot")  { ocpp_send(ctx,:bootNotification)  })
-          # cell(button("Ok ?")  {
-                # Open3.popen3("C:/Program Files (x86)/PuTTY/plink.exe",
-                  # "-load","tiles","lcharge0") { |fin,fout,ferr| 
-                    # logg fout.read 
-                # }
-          # })
           cell(button("lcharge?")  {
                 Thread.new {Open3.popen3("C:/Program Files (x86)/PuTTY/plink.exe",
                   "-load","tiles","lcharge") { |fin,fout,ferr|
@@ -68,30 +152,8 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
 		@log=text_area(100,100,{font: 'Courier 8', bg: "#FFF", fg: "#000"})
     flowi { button("Clear log") { @log.text=""} ; buttoni("Exit") { exit(0) } } 
 	end
-  def logg(*t) @log.append  t.join(" ")+"\n" end
-  def mess(request)
-    ocpp_send(@ctx,request)
-  end
-  def ocpp_send(ctx,request,params={})
-    logg("<<<<<#{request} from #{ctx.cp.value} ==>  #{ctx.cs.value}")
-    unless $cp_to_cs[:config][request]
-      logg "request #{request} unknown !"
-      logg"Should be one of #{$cp_to_cs[:config].keys.map(&:to_s).join(", ")}"
-    end
-    conf={"HCHARGEBOXID"=>ctx.cp.value, 
-         "HMESSID"=>"A%", "HFROM"=>"http://localhost:9090/ocpp", 
-         "HTO"=>"http://you.com"
-    }
-    conf["nonFrom"]=true if ctx.nonfrom
-    r=PostSoap.new(conf)
-     h=$cp_to_cs[:config][request]
-     param= h[:params].inject({}) { |h,k| h[k] = rand(100000).to_s ; h}
-     param= param.nearest_merge( default_params(request).merge({"CONID"=>ctx.con.value.to_s}) )     
-     ret=r.csend(ctx.cs.value,request,param) 
-     @lastTransactionId=ret["TRANSACID"] if ret
-     logg ret.inspect
-     logg "."
-  end
+  
+  #------------- Executions automatiques
   @top=0
   @ctx.isPeriode.value=false
   anim(100) do
@@ -103,22 +165,6 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
           ocpp_send(@ctx,:hbeat) 
        end
     end
-  end
-  def nowRfc() Time.now.utc.round.iso8601(3) end
-  def default_params(request)
-    { 
-      hbeat:                 {},
-      bootNotification:      {"VENDOR"=> "Actemium", "MODEL"=> "A1","CPSN"=> "0","CBSN"=> "","VERSION"=>"0.0.1",
-                            "ICCID"=> "0000","IMSI" => "0000", "METERTYPE" =>"KW", "METERSN"=>""
-                },
-      statusNotification:    {"STATUS"=>"Occupied","ERRORCODE" => "NoError","TIMESTAMP" => nowRfc()},
-      authorize:             {"TAGID"=> "12345678"},
-      startTransaction:      {"TAGID"=> "12345678","TIMESTAMP"=> nowRfc() ,"METERSTART"=> 0},
-      stopTransaction:       {"TRANSACTIONID"=>@lastTransactionId||"101",
-                              "TAGID"=> "12345678","TIMESTAMP"=> nowRfc(),"METERSTOP"=> 100},
-      meterValue:            {"VALUE"=>Time.now.to_i % 1000, 
-         "TRANSACTID" => (1.to_i+rand(100000)*100).to_s, "TIMESTAMP" => nowRfc()},
-    }[request]
   end
 end
 

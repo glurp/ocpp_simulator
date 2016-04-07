@@ -61,7 +61,7 @@ class ServerSoapOcpp < GServer
     super(config[:port],config[:ip])
     @config=config 
     @app=application
-    puts "Serveur TCP on #{config[:ip]}:#{config[:port]}...."
+    puts "Serveur Ocpp/TCP on #{config[:ip]}:#{config[:port]}...."
   end
   def serve(so)
     serve1(so)
@@ -122,7 +122,7 @@ class ServerSoapOcpp < GServer
       rep=@app.send(action,params_req) 
       raise("app response is not Hash") unless Hash === rep
     rescue Exception  => e
-      puts "#{e} : \n  #{e.backtrace.join("\n   ")}"
+      puts "calling app.#{action} : #{e} : \n  #{e.backtrace.join("\n   ")}"
       rep={}
     end
     
@@ -141,21 +141,21 @@ class ServerSoapOcpp < GServer
 end
 
 module AppliAbstract
-    def updateFirmware(pars) end
-    def getLocalListVersion(hpara) end
-    def dataTransfer(hpara) end
-    def getConfiguration(hpara) end
-    def clearCache(hpara) end
-    def reset(hpara) end
-    def sendLocalList(hpara) end
-    def changeConfiguration(hpara) end
-    def getDiagnostics(hpara) end
-    def changeAvailability(hpara) end
-    def unlockConnector(hpara) end
-    def cancelReservation(hpara) end
-    def reserveNow(hpara) end
-    def remoteStartTransaction(hpara) end
-    def remoteStopTransaction(hpara) end
+    def updateFirmware(pars) {} end
+    def getLocalListVersion(hpara)  {} end
+    def dataTransfer(hpara)  {} end
+    def getConfiguration(hpara)  {} end
+    def clearCache(hpara)  {} end
+    def reset(hpara)  {} end
+    def sendLocalList(hpara)  {} end
+    def changeConfiguration(hpara)  {} end
+    def getDiagnostics(hpara)  {} end
+    def changeAvailability(hpara)  {} end
+    def unlockConnector(hpara)  {} end
+    def cancelReservation(hpara)  {} end
+    def reserveNow(hpara)  {} end
+    def remoteStartTransaction(hpara)  {} end
+    def remoteStopTransaction(hpara)  {} end
 end
 
 if $0==__FILE__
