@@ -9,7 +9,9 @@
 #
 #######################################################################
 require_relative 'utils.rb'
-
+#Serveur Telecommande : 
+#   decrit les arguments a extraire (req:), 
+#    la reponse a emettre (resp.data, avec des arguments resp.param)
 $cs_to_cp={
  :HEADER=>{"ACTION" => "?" , "HCHARGEBOXID"=>"?", "HMESSID"=>"?", "HRELMESSIDTO" => "?", "HTO"=> "?"},
  :SHEADER=> '<SOAP-ENV:Envelope  xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" xmlns:ocppCs15="urn://Ocpp/Cp/2012/06/" xmlns:wsa="http://www.w3.org/2005/08/addressing"><SOAP-ENV:Header><wsa:Action>/ACTION</wsa:Action><wsa:RelatesTo RelationshipType="http://www.w3.org/2005/08/addressing/reply">HRELMESSIDTO</wsa:RelatesTo><wsa:To>HTO</wsa:To><wsa:MessageID>HMESSID</wsa:MessageID></SOAP-ENV:Header>',
@@ -31,12 +33,6 @@ $cs_to_cp={
     req: { "t:Key" => "KEY" },
     resp: { data: "<SOAP-ENV:Body><ocppCs15:getConfigurationResponse><ocppCs15:configurationKey>eeee</ocppCs15:configurationKey></ocppCs15:getConfigurationResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    },
-   "clearCache" => {
-    resp: { data: "<SOAP-ENV:Body><ocppCs15:clearCacheResponse/></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
-   },
-   "reset" => {
-    resp: { data: "<SOAP-ENV:Body><ocppCs15:resetResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:resetResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
-   },
    "sendLocalList" => {
     resp: { data: "<SOAP-ENV:Body><ocppCs15:sendLocalListResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:sendLocalListResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    },
@@ -46,30 +42,55 @@ $cs_to_cp={
    "getDiagnostics" => {
     resp: { data: "<SOAP-ENV:Body><ocppCs15:getDiagnosticsResponse><ocppCs15:fileName>toto.html</ocppCs15:fileName></ocppCs15:getDiagnosticsResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    },
+   
+   
+   "clearCache" => {
+    resp: { 
+      req: { },
+      data: "<SOAP-ENV:Body><ocppCs15:clearCacheResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:clearCacheResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", 
+      params: ["STATUS"]
+    }
+   },
+   "reset" => {
+    req: { "t:type" => "TYPE"  },
+    resp: { 
+      params: ["STATUS"],
+      data: "<SOAP-ENV:Body><ocppCs15:resetResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:resetResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", 
+    }
+   },
    "changeAvailability" => {
-    req: { "t:connectorId" => "CONID" , "t:type" => "type" },
-    resp: { data: "<SOAP-ENV:Body><ocppCs15:changeAvailabilityResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:changeAvailabilityResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
+    req: { "t:connectorId" => "CONID" , "t:type" => "TYPE" },
+    resp: { 
+      params: ["STATUS"],
+      data: "<SOAP-ENV:Body><ocppCs15:changeAvailabilityResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:changeAvailabilityResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    },
    "unlockConnector" => {
-    req: { "t:connectodId" => "CONID" },
-    resp: { data: "<SOAP-ENV:Body><ocppCs15:unlockConnectorResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:unlockConnectorResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
-   },
-   "reserveNow" => {
-    req: { "t:connectodId" => "CONID", "t:idTag" => "TAGID", "t:reservationId" => "RESID"},
-    resp: { data: "<SOAP-ENV:Body><ocppCs15:reserveNowResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:reserveNowResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
-   },
-   "cancelReservation" => {
-    resp: { data: "<SOAP-ENV:Body><ocppCs15:cancelReservationResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:cancelReservationResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
+    req: { "t:connectorId" => "CONID" },
+    resp: { 
+      params: ["STATUS"],
+      data: "<SOAP-ENV:Body><ocppCs15:unlockConnectorResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:unlockConnectorResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    },
    "remoteStartTransaction" => {
-    req: { "t:connectodId" => "CONID", "t:idTag" => "TAGID"},
+    req: { "t:connectorId" => "CONID", "t:idTag" => "TAGID"},
     resp: { 
-      data: "<SOAP-ENV:Body><ocppCs15:remoteStartTransactionResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:remoteStartTransactionResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>",
-      params: [] }
+      data: "<SOAP-ENV:Body><ocppCs15:remoteStartTransactionResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:remoteStartTransactionResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      params: ["STATUS"] 
+    }
    },
    "remoteStopTransaction" => {
     req: { "t:transactionId" => "TRANSACID"},
-    resp: { data: "<SOAP-ENV:Body><ocppCs15:remoteStopTransactionResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:remoteStopTransactionResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
+    resp: { 
+      params: ["STATUS"],
+      data: "<SOAP-ENV:Body><ocppCs15:remoteStopTransactionResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:remoteStopTransactionResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
+   },
+   "reserveNow" => {
+    req: { "t:connectodId" => "CONID", "t:idTag" => "TAGID", "t:reservationId" => "RESID"},
+    resp: { 
+      params: ["STATUS"],
+      data: "<SOAP-ENV:Body><ocppCs15:reserveNowResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:reserveNowResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
+   },
+   "cancelReservation" => {
+    resp: { data: "<SOAP-ENV:Body><ocppCs15:cancelReservationResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:cancelReservationResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    }
  }
 }
