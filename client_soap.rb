@@ -34,16 +34,19 @@ class ClientSoap
     so.sync=true
     so.write(buff)
     buff.showXmlData("Soap Request:")
-    head=so.gets("\r\n\r\n")
+    reponse=""
+    timeout(120) { reponse=so.read() }
+    head,rep= reponse.split("\r\n\r\n",2)
     codeResponse=head[/^HTTP\/\d.\d (\d+)/,1].to_i
     if codeResponse!=200
       puts "\n\header received : \n" + head
       return ""
     end
-    len= head[/Content-Length: (\d+)\r\n/,1]
-    #rep=so.recv(len.to_i)
-    rep=nil
-    timeout(10) { rep=so.read }
+    len= head[/Content-Length: (\d+)\s*\r\n/,1]
+    ##rep=so.recv(len.to_i)
+    #rep=nil
+    #timeout(120) { rep=so.read(len) }
+    puts " *** Content-Length =#{len} real=#{rep.size} <<\n#{head}\n>>\n"
     so.close rescue nil
     rep.showXmlData("Soap Response :")
     rep

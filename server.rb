@@ -113,7 +113,7 @@ class ServerSoapOcpp < GServer
     h=$cs_to_cp[:reqs][action]
     params_req= h[:req] ? data.extract_data(h[:req]) : {}
     
-    params_req={ "ACTION" => action0 }.merge(params_req)
+    params_req=hrep.merge({ "ACTION" => action0 }).merge(params_req)
     puts "Request : #{params_req.inspect}"
     
     #---------------------  call application , format response
@@ -141,21 +141,21 @@ class ServerSoapOcpp < GServer
 end
 
 module AppliAbstract
-    def updateFirmware(pars) {} end
-    def getLocalListVersion(hpara)  {} end
-    def dataTransfer(hpara)  {} end
-    def getConfiguration(hpara)  {} end
-    def clearCache(hpara)  {} end
-    def reset(hpara)  {} end
-    def sendLocalList(hpara)  {} end
-    def changeConfiguration(hpara)  {} end
-    def getDiagnostics(hpara)  {} end
-    def changeAvailability(hpara)  {} end
-    def unlockConnector(hpara)  {} end
-    def cancelReservation(hpara)  {} end
-    def reserveNow(hpara)  {} end
-    def remoteStartTransaction(hpara)  {} end
-    def remoteStopTransaction(hpara)  {} end
+    def updateFirmware(pars) {"STATUS" => "Accepted"} end
+    def getLocalListVersion(hpara)  {"STATUS" => "Accepted"} end
+    def dataTransfer(hpara)  {"STATUS" => "Accepted"} end
+    def getConfiguration(hpara)  {"STATUS" => "Accepted"} end
+    def clearCache(hpara)  {"STATUS" => "Accepted"} end
+    def reset(hpara)  {"STATUS" => "Accepted"} end
+    def sendLocalList(hpara)  {"STATUS" => "Accepted"} end
+    def changeConfiguration(hpara)  {"STATUS" => "Accepted"} end
+    def getDiagnostics(hpara)  {"STATUS" => "Accepted"} end
+    def changeAvailability(hpara)  {"STATUS" => "Accepted"} end
+    def unlockConnector(hpara)  {"STATUS" => "Accepted"} end
+    def cancelReservation(hpara)  {"STATUS" => "Accepted"} end
+    def reserveNow(hpara)  {"STATUS" => "Accepted"} end
+    def remoteStartTransaction(hpara)  {"STATUS" => "Accepted"} end
+    def remoteStopTransaction(hpara)  {"STATUS" => "Accepted"} end
 end
 
 if $0==__FILE__
