@@ -1,4 +1,4 @@
-require 'Ruiby'
+require_relative '../dsl-gtk/lib/Ruiby.rb'
 require_relative 'client'
 require_relative 'server'
 require 'time'
@@ -38,13 +38,14 @@ module Ruiby_dsl
 end
 
 ################## client OCPP => scada ##############################
-
+$tagid="123456"
 module Ruiby_dsl
   def mess(request)
     ocpp_send(@ctx,request)
   end
   def ocpp_send(ctx,request,params={})
     logg("<<<<<#{request} from #{ctx.cp.value} ==>  #{ctx.cs.value}")
+    $tagid= ctx.tag.value
     unless $cp_to_cs[:config][request]
       logg "request #{request} unknown !"
       logg"Should be one of #{$cp_to_cs[:config].keys.map(&:to_s).join(", ")}"
@@ -57,8 +58,14 @@ module Ruiby_dsl
     conf["nonFrom"]=true if ctx.nonfrom
     r=PostSoapCs.new(conf)
     h=$cp_to_cs[:config][request]
+    
+    p "===================================="
     param= h[:params].inject({}) { |h,k| h[k] = rand(100000).to_s ; h}
     param= param.nearest_merge( default_params(request).merge({"CONID"=>ctx.con.value.to_s}) )     
+    param=param.merge(params)
+    (panel("Editions des parametres") { properties("",param,:edit=>true)  }) if param.size>0 && ctx.saisie.value=="1"
+    p "===================================="
+    
     Thread.new {
       ret=r.csend(ctx.cs.value,request,param) 
       gui_invoke { 
@@ -75,11 +82,11 @@ module Ruiby_dsl
       bootNotification:      {"VENDOR"=> "Actemium", "MODEL"=> "A1","CPSN"=> "0","CBSN"=> "","VERSION"=>"0.0.1",
                             "ICCID"=> "0000","IMSI" => "0000", "METERTYPE" =>"KW", "METERSN"=>""
                 },
-      statusNotification:    {"STATUS"=>"Occupied","ERRORCODE" => "NoError","TIMESTAMP" => nowRfc()},
-      authorize:             {"TAGID"=> "12345678"},
-      startTransaction:      {"TAGID"=> "12345678","TIMESTAMP"=> nowRfc() ,"METERSTART"=> 0},
+      statusNotification:    {"STATUS"=>"Available","ERRORCODE" => "NoError","VENDORERROR_CODE" => "", "TIMESTAMP" => nowRfc()},
+      authorize:             {"IDTAG"=> $tagid},
+      startTransaction:      {"TAGID"=> $tagid,"TIMESTAMP"=> nowRfc() ,"METERSTART"=> 0},
       stopTransaction:       {"TRANSACTIONID"=>@lastTransactionId||"101",
-                              "TAGID"=> "12345678","TIMESTAMP"=> nowRfc(),"METERSTOP"=> 100},
+                              "TAGID"=> $tagid,"TIMESTAMP"=> nowRfc(),"METERSTOP"=> 100},
       meterValue:            {"VALUE"=>Time.now.to_i % 1000, 
          "TRANSACTID" => (@lastTransactionId).to_s, "TIMESTAMP" => nowRfc()},
     }[request]
@@ -91,7 +98,7 @@ end
 Ruiby.app width: 800, height: 400, title: "Test config borne" do
   $app=self
   @lastTransactionId=nil
-  ctx=make_StockDynObject("ee",{"cp" => "TEST1" , "cs" => "http://ns308363.ovh.net:6060/ocpp" ,"con"=>"1","nonfrom"=>"0","isPeriode"=>false, "periode"=>10, "url" => "http://localhost:6161"})
+  ctx=make_StockDynObject("ee",{"tag"=> "1234567", "cp" => "TEST1" , "cs" => "http://ns308363.ovh.net:6060/ocpp" ,"con"=>"1","nonfrom"=>"0","isPeriode"=>false, "periode"=>10, "url" => "http://localhost:6161","saisie" => false})
   @ctx=ctx
   after(0) { reinit_serveur(@ctx.url.value) }
 	stack do
@@ -107,6 +114,12 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
                  ctx.con.value=index+1
               }
             }})
+        next_row
+          cell_right(label "tagId : ")
+          @srv=cell_hspan(3,entry(ctx.tag,20,{font: 'Courier 10'}))
+        next_row
+          cell_right(label "")
+          cell_hspan(1,check_button("Editions des requettes",ctx.saisie))
         next_row
           cell_right(label "")
           cell_hspan(1,check_button("pas de champ from",ctx.nonfrom))
@@ -132,7 +145,12 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
           cell(button("Cdg",bg: "#FFAABB")    { ocpp_send(ctx,:hbeat)     })
           cell(button("Authorize",bg: "#AABBFF")         { ocpp_send(ctx,:authorize) })
 			    cell(button("MeterValues",bg: "#AA88AA")       { ocpp_send(ctx,:meterValue)})
-			    cell(button("StatusNotif.",bg: "#AAAAAA"){ ocpp_send(ctx,:statusNotification)})
+			    cell(button("StatusNot.",bg: "#AAAAAA") { 
+             rep= ask("en prise?") ? "Occupied" : "Available"
+             code=promptSync("Error vendor code ?") 
+             error =  (code.size>0) ? "OtherError" : "NoError"
+             ocpp_send(ctx,:statusNotification,{"STATUS" => rep,"ERRORCODE" => error,"VENDORERROR_CODE" => code||""})
+          })
         next_row
 			    cell(button("Start") { ocpp_send(ctx,:startTransaction) })
           cell(button("Stop")  { ocpp_send(ctx,:stopTransaction)  })
