@@ -14,7 +14,12 @@ SOAP is used via xml templates, so this gem do not depend on any soap stack ...
   scada dialogs, make some start/stop transactions, some notifications.
 * tc.rb : client as scada: send commandes to chargePoints
 * parc_sim.rb : simulate a set of charge point.
-* hmi_test.rb : simple forms/commands  tests a chargeBoxId in a ocpp scada
+
+Some tools developped with the framework:
+* hmi_test.rb : simple HMI for simulate a charge point in plaforme : test central ocpp configuration
+* tc_batch.rb : loop with some centrale commands for stimulate charge point
+* rcrelai.rb  : ocpp cs->cp router : receive commands on listen socket and route as client to another IP:port addresse
+                From/To/MessageId are updated, timing is calculate
 
 Client
 ======
