@@ -8,7 +8,7 @@ class Hash
   end
   def nearest_merge(oh)
     a=self.dup
-    a.size==0 ? a.merge(oh) :  oh.each { |k,v| a[k] ? a[k]=v : (a[n=nearest(k)]=v ; puts  "    merged #{k} with #{n} = #{v}" ) }
+    a.size==0 ? a.merge(oh) :  oh.each { |k,v| a[k]=v  }
     a
   end
 end
