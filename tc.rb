@@ -46,7 +46,10 @@ if ARGV.size==0
     puts r.csend(server,name,param) 
   }
 else  
-
+  if ARGV.size<3
+    puts "Usage: #{$0} server cbi request p1 v1 p2 v2 ..."
+    exit(1)
+  end
   #server="http://localhost:8080/ocpp"  
   server=ARGV[0]  
   charboxid=ARGV[1]
@@ -59,8 +62,8 @@ else
     puts "Should be one of #{$client_cs_to_cp[:config].keys.map(&:to_s).join(", ")}"
     exit(0)
   end
-  r=PostSoapCp.new("HCHARGEBOXID"=>charboxid, "HMESSID"=>"A%", "HFROM"=>"http://localhost:9090/ocpp", "HTO"=>server)
   hh=$client_cs_to_cp[:config][request]
+  r=PostSoapCp.new("HCHARGEBOXID"=>charboxid, "HMESSID"=>"A%", "HFROM"=> "http://5.39.17.98:8080/", "HTO"=>server)
   param= hh[:params].inject({}) { |h,k| h[k] = rand(100000).to_s ; h}
   param= param.nearest_merge( args )
   puts  "Parametres : " + param.map {|k,v| "%s => %s" % [k,v] }.join(", ")
