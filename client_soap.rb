@@ -16,6 +16,7 @@ class ClientSoap
     buff.sub!(/(#{@config["HMESSID"]})/,"#{(Time.now.to_f*1000).round}")
     hparam.each { |k,value| buff.gsub!(k,value.to_s) }
     #buff.gsub!(/<wsa5:From>.*?<\/wsa5:From>/,"")    if @config["nonFrom"]
+    puts "\n#{'='*80}\n#{buff.gsub("><",">\n<")}\n#{'='*80}\n" if $DEBUG
     buff
   end
   def format_http(server,request,hparam)
