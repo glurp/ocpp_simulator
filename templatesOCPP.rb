@@ -12,6 +12,7 @@ require_relative 'utils.rb'
 #Serveur Telecommande : 
 #   decrit les arguments a extraire (req:), 
 #    la reponse a emettre (resp.data, avec des arguments resp.param)
+
 $cs_to_cp={
  :HEADER=>{"ACTION" => "?" , "HCHARGEBOXID"=>"?", "HMESSID"=>"?", "HRELMESSIDTO" => "?", "HTO"=> "?"},
  :SHEADER=> '<SOAP-ENV:Envelope  xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" xmlns:ocppCs15="urn://Ocpp/Cp/2012/06/" xmlns:wsa="http://www.w3.org/2005/08/addressing"><SOAP-ENV:Header><wsa:Action>/ACTION</wsa:Action><wsa:RelatesTo RelationshipType="http://www.w3.org/2005/08/addressing/reply">HRELMESSIDTO</wsa:RelatesTo><wsa:To>HTO</wsa:To><wsa:MessageID>HMESSID</wsa:MessageID></SOAP-ENV:Header>',
@@ -131,7 +132,11 @@ $client_cs_to_cp={
 ',
      params: [],
      ret: {"t:status" => "STATUS" },
-     }
+     },
+    :getDiagnostics => { :req=> '<sooap:Envelope xmlns:sooap="http://www.w3.org/2003/05/soap-envelope"  xmlns:ns1="urn://Ocpp/Cp/2012/06/" xmlns:ns2="http://www.w3.org/2005/08/addressing"><sooap:Header><ns2:MessageID>urn:uuid:HMESSID</ns2:MessageID><ns2:To>HTO</ns2:To><ns2:From>HFROM</ns2:From><ns1:chargeBoxIdentity>HCHARGEBOXID</ns1:chargeBoxIdentity><ns2:Action>/GetDiagnostics</ns2:Action></sooap:Header><sooap:Body><ns1:getDiagnosticsRequest><ns1:location>LOCATION</ns1:location></ns1:getDiagnosticsRequest></sooap:Body></sooap:Envelope>',
+       params: ["LOCATION"],
+       ret: {"t:status" => "STATUS" },
+    }
   }
 }
 
