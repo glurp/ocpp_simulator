@@ -8,7 +8,10 @@ class Object
   def puts(*t) $app.instance_eval { logg("  >",*t) } end
 end
 module Ruiby_dsl
-  def logg(*t) $stdout.puts t.join(" "); @log.append  t.join(" ")+"\n" end
+  def logg(*t) 
+    to= t.join(" ").encode("UTF-8",'binary', invalid: :replace, undef: :replace, replace: '?')
+    $stdout.puts t.join(" "); 
+    @log.append  t.join(" ")+"\n" end
 end
 
 ##################### Server Ocpp ###################
@@ -79,6 +82,7 @@ module Ruiby_dsl
   def default_params(request)
     { 
       hbeat:                 {},
+      dataTransfert:         {"VENDORID" => "Actemium", "MESSID" => Time.now.to_i.to_s, "DATA" => "{ }"},
       bootNotification:      {"VENDOR"=> "Actemium", "MODEL"=> "A1","CPSN"=> "0","CBSN"=> "","VERSION"=>"0.0.1",
                             "ICCID"=> "0000","IMSI" => "0000", "METERTYPE" =>"KW", "METERSN"=>""
                 },
@@ -143,6 +147,7 @@ Ruiby.app width: 800, height: 400, title: "Test config borne" do
           })
         next_row
           cell(button("Cdg",bg: "#FFAABB")    { ocpp_send(ctx,:hbeat)     })
+          cell(button("dataTransfert",bg: "#00FF00")    { ocpp_send(ctx,:dataTransfert)     })
           cell(button("Authorize",bg: "#AABBFF")         { ocpp_send(ctx,:authorize) })
 			    cell(button("MeterValues",bg: "#AA88AA")       { ocpp_send(ctx,:meterValue)})
 			    cell(button("StatusNot.",bg: "#AAAAAA") { 
