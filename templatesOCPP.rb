@@ -161,7 +161,7 @@ $cp_to_cs={
    },
    :dataTransfert=>
     {:req=>
-      "<SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand=\"true\">HMESSID</ocppCs15:chargeBoxIdentity><wsa5:MessageID>HMESSID</wsa5:MessageID><wsa5:From><wsa5:Address>HFROM</wsa5:Address></wsa5:From><wsa5:To SOAP-ENV:mustUnderstand=\"true\">HTO</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand=\"true\">/DataTransfer</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:dataTransferRequest><ocppCs15:vendorId>VENDORID</ocppCs15:vendorId><ocppCs15:messageId>MESSID</ocppCs15:messageId><ocppCs15:data>DATA</ocppCs15:data></ocppCs15:dataTransferRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "<SOAP-ENV:Envelope ><SOAP-ENV:Header><ocppCs15:chargeBoxIdentity SOAP-ENV:mustUnderstand=\"true\">HCHARGEBOXID</ocppCs15:chargeBoxIdentity><wsa5:MessageID>HMESSID</wsa5:MessageID><wsa5:From><wsa5:Address>HFROM</wsa5:Address></wsa5:From><wsa5:To SOAP-ENV:mustUnderstand=\"true\">HTO</wsa5:To><wsa5:Action SOAP-ENV:mustUnderstand=\"true\">/DataTransfer</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><ocppCs15:dataTransferRequest><ocppCs15:vendorId>VENDORID</ocppCs15:vendorId><ocppCs15:messageId>MESSID</ocppCs15:messageId><ocppCs15:data>DATA</ocppCs15:data></ocppCs15:dataTransferRequest></SOAP-ENV:Body></SOAP-ENV:Envelope>",
      params: ["VENDORID", "MESSID", "DATA"],
      ret: {"t:status" => "STATUS"}
       },
