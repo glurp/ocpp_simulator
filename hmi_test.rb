@@ -64,11 +64,11 @@ module Ruiby_dsl
     
     p "===================================="
     param= h[:params].inject({}) { |h,k| h[k] = rand(100000).to_s ; h}
-    param= param.nearest_merge( default_params(request).merge({"CONID"=>ctx.con.value.to_s}) )     
+    param= param.merge( default_params(request).merge({"CONID"=>ctx.con.value.to_s}) )     
     param=param.merge(params)
     (panel("Editions des parametres") { properties("",param,:edit=>true)  }) if param.size>0 && ctx.saisie.value=="1"
     p "===================================="
-    
+
     Thread.new {
       ret=r.csend(ctx.cs.value,request,param) 
       gui_invoke { 
