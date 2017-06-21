@@ -1,5 +1,7 @@
 require 'socket'
 require 'timeout'
+require 'net/https'
+require 'net/http'
 
 class ClientSoap
   def initialize(template,namespace,config) 
@@ -7,6 +9,11 @@ class ClientSoap
     @namespace=namespace
     p @namespace
     @config=config 
+  end
+  def format_https(server,request,hparam)
+    data=format(request,hparam)
+    action=data[/<.*?Action.*?>([^<]+)<\/.*?Action.*?>/,1]
+    data         
   end
   def format(request,hparam) 
     buff= @template[:config][request][:req].dup
@@ -26,6 +33,26 @@ class ClientSoap
          "Content-Length: #{data.size}\r\nHost: localhost:9999\r\nConnection: close\r\nUser-Agent: ocpp-simulator"+
          "\r\n\r\n#{data}"
          
+  end
+  def  https_post(server,buff)
+
+    uri = URI(server)
+    req = Net::HTTP::Post.new(uri.path, {'Content-Type' => "application/soap+xml;charset=UTF-8;"})
+    req.body = buff
+    
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http.ssl_version = :TLSv1 
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE # !!!
+    
+    response=nil
+    r= http.start {|http| 
+        resp=http.request(req)
+        puts "Response: #{resp.inspect}"
+        response=resp.read_body
+    }
+    response.showXmlData("Soap Response :")
+    response
   end
   def http_post(server,buff)
     ip=server[/http:\/\/([^:]+):(\d+)\/.*/,1]
@@ -61,13 +88,16 @@ class ClientSoap
   def csend(server,request,hparam)
     raise("Unknown OCPP request : #{request}")  unless @template[:config][request]
     buff=format_http(server,request,hparam)
-    puts buff if $DEBUG
-    rep=http_post(server,buff)
-    if rep
-       rep.extract_data(@template[:config][request][:ret]||{})
+    if server =~ /^https:/
+       buff=format_https(server,request,hparam)
+       puts buff if $DEBUG
+       rep=https_post(server,buff)
     else
-       rep
+       buff=format_http(server,request,hparam)
+       puts buff if $DEBUG
+       rep=http_post(server,buff)
     end
+    rep ?  rep.extract_data(@template[:config][request][:ret]||{}) : rep
   end
 
 end
