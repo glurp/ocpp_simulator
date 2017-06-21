@@ -121,7 +121,7 @@ This will create :
 Configuration
 =============
 
-All requests/responses are configured in templateOCPP.rb
+All Soap requests/responses are configured in templateOCPP.rb
 
 Client : each SOAP request/response are configured with
 * request: xml template to send, each 'value' place are represented  with a key
@@ -135,5 +135,5 @@ Server : each SOAP request/response are configured with
 
 LIMITATION !!! : all that SOAP stuff work only with xml with statics structure !
 * you can't extract a list of tagid received from CS
-* you can't send a free list of meter
+* you can't send a free list of measures
 
