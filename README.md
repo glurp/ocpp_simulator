@@ -20,6 +20,16 @@ Some tools developped with the framework:
 * tc_batch.rb : loop with some centrale commands for stimulate charge point
 * rcrelai.rb  : ocpp cs->cp router : receive commands on listen socket and route as client to another IP:port addresse
                 From/To/MessageId are updated, timing is calculate
+News
+====
+
+21/06/2017
+* dataTransfert in hmi_test
+* support https for soap-client
+
+TODO
+=====
+A mini-scada, for fun, with OCPP and Ruiby/SVG Gui                
 
 Client
 ======
