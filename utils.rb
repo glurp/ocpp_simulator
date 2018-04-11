@@ -4,7 +4,9 @@
 
 class Hash
   def nearest(k)
-    self.keys.map {|a| [k.to_s.dist(a),a] }.sort {|a,b| a[0]<=>b[0]}[0][1]
+    return self[k] if self.has_key?(k)
+    puts "Unknown key #{k} for properties #{self.inspect}... search nearest..."
+    self.keys.map {|a| [k.to_s.dist(a),a] }.min_by  {|a,b| a[0]}
   end
   def nearest_merge(oh)
     a=self.dup
@@ -13,7 +15,7 @@ class Hash
   end
 end
 class String
-  # extract daa parameters from a xml. htemplate describe 2 types of 
+  # extract data parameters from a xml. htemplate describe 2 types of 
   # extraction :
   #   t:   <tag>DATA</tag>
   #   a:   <tag attribute="DATA"...>

@@ -52,7 +52,7 @@ BasicSocket.do_not_reverse_lookup = true
 
 require 'timeout'
 require 'readline'
-require 'gserver'
+#require 'gserver'
 require_relative './templatesOCPP.rb'
 
 

@@ -58,12 +58,16 @@ class ClientSoap
     ip=server[/http:\/\/([^:]+):(\d+)\/.*/,1]
     port=server[/http:\/\/([^:]+):(\d+)\/.*/,2]
     puts "Connect to #{ip}  => #{port}  #{server}"
+    puts "## #{Time.now} >> connection au serveur #{ip}  => #{port}  #{server}"
     so=TCPSocket.new(ip,port)
     so.sync=true
+    puts "## #{Time.now} >> envoie data len=#{buff.size}"
     so.write(buff)
     buff.showXmlData("Soap Request:")
     reponse=""
+    puts "## #{Time.now} >> attente reponse"
     timeout(120) { reponse=so.read() }
+    puts "## #{Time.now} >> reponse recu len=#{reponse.size}"
     head,rep= reponse.split("\r\n\r\n",2)
     codeResponse=head[/^HTTP\/\d.\d (\d+)/,1].to_i
     if codeResponse!=200

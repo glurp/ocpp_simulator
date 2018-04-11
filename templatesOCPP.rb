@@ -88,7 +88,7 @@ $cs_to_cp={
     req: { "t:connectodId" => "CONID", "t:idTag" => "TAGID", "t:reservationId" => "RESID"},
     resp: { 
       params: ["STATUS"],
-      data: "<SOAP-ENV:Body><ocppCs15:reserveNowResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:reserveNowResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
+      data: "<SOAP-ENV:Body><ocppCs15:reserveNowResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:reserveNowResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    },
    "cancelReservation" => {
     resp: { data: "<SOAP-ENV:Body><ocppCs15:cancelReservationResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:cancelReservationResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
