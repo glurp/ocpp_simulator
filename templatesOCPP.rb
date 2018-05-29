@@ -9,9 +9,11 @@
 #
 #######################################################################
 require_relative 'utils.rb'
-#Serveur Telecommande : 
-#   decrit les arguments a extraire (req:), 
-#    la reponse a emettre (resp.data, avec des arguments resp.param)
+
+
+#######################################################################
+# requette Supervition => borne, cote borne (Response)
+#######################################################################
 
 $cs_to_cp={
  :HEADER=>{"ACTION" => "?" , "HCHARGEBOXID"=>"?", "HMESSID"=>"?", "HRELMESSIDTO" => "?", "HTO"=> "?"},
@@ -85,16 +87,23 @@ $cs_to_cp={
       data: "<SOAP-ENV:Body><ocppCs15:remoteStopTransactionResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:remoteStopTransactionResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    },
    "reserveNow" => {
-    req: { "t:connectodId" => "CONID", "t:idTag" => "TAGID", "t:reservationId" => "RESID"},
+    req: { "t:connectorId" => "CONID", "t:idTag" => "TAGID", "t:reservationId" => "RESID"},
     resp: { 
       params: ["STATUS"],
       data: "<SOAP-ENV:Body><ocppCs15:reserveNowResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:reserveNowResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
    },
    "cancelReservation" => {
-    resp: { data: "<SOAP-ENV:Body><ocppCs15:cancelReservationResponse><ocppCs15:status>Accepted</ocppCs15:status></ocppCs15:cancelReservationResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", }
-   }
+    req: { "t:reservationId" => "RESID"},
+    resp: { 
+      params: ["STATUS"],
+      data: "<SOAP-ENV:Body><ocppCs15:cancelReservationResponse><ocppCs15:status>STATUS</ocppCs15:status></ocppCs15:cancelReservationResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>", 
+    }
+   },
  }
 }
+#######################################################################
+# requette Supervition => borne, cote supervision (Request)
+#######################################################################
 
 $client_cs_to_cp={
  :HEADER=>{"ACTION" => "?" , "HCHARGEBOXID"=>"?", "HMESSID"=>"?", "HTO"=> "?"},
@@ -136,10 +145,49 @@ $client_cs_to_cp={
     :getDiagnostics => { :req=> '<sooap:Envelope xmlns:sooap="http://www.w3.org/2003/05/soap-envelope"  xmlns:ns1="urn://Ocpp/Cp/2012/06/" xmlns:ns2="http://www.w3.org/2005/08/addressing"><sooap:Header><ns2:MessageID>urn:uuid:HMESSID</ns2:MessageID><ns2:To>HTO</ns2:To><ns2:From>HFROM</ns2:From><ns1:chargeBoxIdentity>HCHARGEBOXID</ns1:chargeBoxIdentity><ns2:Action>/GetDiagnostics</ns2:Action></sooap:Header><sooap:Body><ns1:getDiagnosticsRequest><ns1:location>LOCATION</ns1:location></ns1:getDiagnosticsRequest></sooap:Body></sooap:Envelope>',
        params: ["LOCATION"],
        ret: {"t:status" => "STATUS" },
+     },
+    :reserveNow => { :req=> '',
+       params: %w{CONID TAGID DATE RESID},
+       :req=> '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header>
+       <chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">TEST1</chargeBoxIdentity>
+       <Action xmlns="http://www.w3.org/2005/08/addressing">/ReserveNow</Action>
+       <MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:921b3182-d788-4930-adba-c1d786d41e98</MessageID>
+       <To xmlns="http://www.w3.org/2005/08/addressing">http://localhost:6161</To>
+       <ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo>
+       </soap:Header>
+       <soap:Body>
+       <reserveNowRequest xmlns="urn://Ocpp/Cp/2012/06/">
+       <connectorId>CONID</connectorId>
+       <expiryDate>DATE</expiryDate>
+       <idTag>TAGID</idTag>
+       <parentIdTag></parentIdTag>
+       <reservationId>RESID</reservationId>
+       </reserveNowRequest>
+       </soap:Body></soap:Envelope>',
+       ret: {"t:status" => "STATUS" },
+    },
+    :cancelReservation => { :req=> '',
+       params: ["RESID"],
+       :req=> '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
+<soap:Header>
+<chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">TEST1</chargeBoxIdentity>
+<Action xmlns="http://www.w3.org/2005/08/addressing">/CancelReservation</Action>
+<MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:fd766221-75a9-425f-878a-c6afdde5db1f</MessageID>
+<To xmlns="http://www.w3.org/2005/08/addressing">http://localhost:6161</To>
+<ReplyTo xmlns="http://www.w3.org/2005/08/addressing"><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo>
+</soap:Header>
+<soap:Body><cancelReservationRequest xmlns="urn://Ocpp/Cp/2012/06/">
+<reservationId>RESID</reservationId>
+</cancelReservationRequest></soap:Body></soap:Envelope>
+',
+       ret: {"t:status" => "STATUS" },
     }
   }
 }
 
+#######################################################################
+# requette Borne=> Supervision , cote borne (Request)
+#######################################################################
 
 $cp_to_cs={
  :HEADER=>{"ID"=>"", "HMESSID"=>"", "HFROM"=>"", "HTO"=>""},
