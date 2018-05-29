@@ -1,0 +1,30 @@
+Architecture test 
+==================
+freshmile <---     SaiaVE    <---    Borne
+         X              :6060
+
+freshmile --->     SaiaVE --->    Borne
+tc.rb             eclipse        hmi_gtest.rb
+               :6160            :6161
+
+
+Configurations simulateurs
+===========================
+
+# cote simulateur borne:
+ envoye en heartbeat , pour que saia optienne une IP
+sup: http://localhost:6060/ocpp
+addr borne: http://localhost:6161
+CBI: TEST1
+
+# simulation city-app , via admin2: debugger RTDB avec liste :
+
+'Borne 2',BORNE_2.dde_reserver,BORNE_2.dde_reserver_badge,BORNE_2.dde_reserver_duree,BORNE_2.dde_annuler_reservation,BORNE_2.reservationID,
+'Charge 2',CHARGE_2.dde_reserver,CHARGE_2.dde_reserver_badge,CHARGE_2.dde_reserver_duree,CHARGE_2.dde_annuler_reservation,CHARGE_2.reservationID,
+'Charge 4',CHARGE_4.dde_reserver,CHARGE_4.dde_reserver_badge,CHARGE_4.dde_reserver_duree,CHARGE_4.dde_annuler_reservation,CHARGE_4.reservationID,
+
+
+# simulation freshmile :
+ 
+ruby tc.rb  http://localhost:6160/ocpp TEST1   reserveNow        CONID 1  TAGID 1234567 RESID 90789  DATE 2018-05-29T23:06:40.000+02:00 
+ruby tc.rb  http://localhost:6160/ocpp TEST1   cancelReservation          TAGID 1234567 RESID 90789 
