@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+<meta charset="UTF-8">
+<head><title>WSOCPP</title>
+<style>   
+
+body { margin: 0px 0px 0px 0px; }
+div.log {background-color: #055; color: #CC0; padding-left: 10px;border: inset 2px gray;font-size: 10px;overflow:scroll;}
+button { width: 200px;}
+h1 { margin: 0px 0px 0px 0px; background-color: black; color: white;padding: 20px 0px 2px 30px}
+fieldset { margin: 20px;}
+</style>
+</head>
+<body>
+<h1>Borne OCPP-J 1.6</h1>
+<br>
+<p>Page de test ChargePoint OCPP 1.6 JSON <p>
+
+<script>
+var CBI="TEST1";
+
+function get_inp(id) { return document.getElementById(id).value ; }
+function message(id,txt) {
+ var node=document.getElementById(id)
+ if (node) node.innerHTML+=txt+'<br>';
+}
+function log(msg) {
+    var c=document.getElementById('log').textContent;
+    c=(new Date().toLocaleTimeString())+" | " + msg+"\n"+c;
+    if (c.length>4000)
+      c=c.substring(0,3000);
+    document.getElementById('log').textContent=c
+}
+function show(msg,d) {
+    var node=document.getElementById("croix");
+    if (node) {
+      xyz=JSON.parse(msg);
+      x=xyz[0],y=xyz[1],date=xyz[5];
+      node.style.left=""+x+"px";
+      node.style.top=""+y+"px";
+      message("ws",""+(d-date)+" ms")
+    }
+}
+var ok=false;
+function createClient(port,cbi) {
+  if (ok)  return;
+  var ws = new WebSocket("ws://localhost:"+port+"/"+cbi);
+  ws.onopen = function(event) {
+     ok=true;
+     ws_init(this);
+     log('CONNECT with '+ ws.url);
+
+     this.onclose = function(event) {
+        ok=false;
+       log('DISCONNECT');
+     };
+    this.onmessage = function(event) {
+        log("RECEIVED  "+event.data );
+        ws_receive(JSON.parse(event.data))
+    };
+    //this.send("Hello world!");
+  };
+}
+setInterval(function() { createClient(__PORT__,get_inp('cbi')); },2000);
+setTimeout(function() { createClient(__PORT__,get_inp('cbi')); },100);
+/************************************************************************************
+   OCPP JSON 1.6 Request
+************************************************************************************/
+/************* Utils **************/
+var nomess=0;
+var sending=false;
+var con;
+
+function ws_init(ws) {
+ nomess=0;
+ sending=false;
+ con=ws;
+}
+function ws_receive(data) {
+  sending=false; 
+}
+function sendRequest(name,data) {
+  if (sending) { alert("emission en cours..."); return }
+  if (! con) { alert("pas connecte..."); return }
+  sending=true;
+  var sdata=data
+  var id= nomess++;
+  var requestId=id
+  var message=JSON.stringify( [2,id,name,sdata] )
+  log("SEND  "+ message);
+  con.send(message);
+}
+function pad(n){return n<10 ? '0'+n : n}
+function get_time() {
+ var d= new Date();
+ return d.getUTCFullYear()+'-'
+      + pad(d.getUTCMonth()+1)+'-'
+      + pad(d.getUTCDate())+'T'
+      + pad(d.getUTCHours())+':'
+      + pad(d.getUTCMinutes())+':'
+      + pad(d.getUTCSeconds())+'Z' ;
+}
+/************************************ Requests *************************************/
+
+function do_close() { con.close(); }
+
+function do_boot() {
+ sendRequest("BootNotification",{chargePointVendor: "eee", chargePointModel: "09798760J", imsi:"987606"})
+}
+function do_heartbeat() {
+ sendRequest("Heartbeat",{})
+}
+function do_authorize() {
+ sendRequest("Authorize",{idTag: get_inp("tagid")})
+}
+function do_start() {
+ sendRequest("StartTransaction",{
+    connectorId: 1, idTag: get_inp("tagid"),reservationId: 0, meterStart: 0,
+    timestamp: "2018-01-01T22:22:22Z"
+ })
+}
+function do_stop() {
+ sendRequest("StopTransaction",{
+    idTag: get_inp("tagid"),meterStop: 222, 
+    timestamp:  get_time(),
+    transactionId: get_inp('trid'),
+    reason: "UnlockCommand"
+ })
+}
+function do_status() {
+ sendRequest("StatusNotification",{
+    connectorId: get_inp('cidc'),
+    errorCode: "NoError",
+    status: "Available"
+ })
+}
+function do_meter() {
+ sendRequest("MeterValues",{
+  connectorId: get_inp('cidc'),
+  transactionId: get_inp('tridsss'),
+  meterValue: [
+   {timestamp: get_time(),sampledValue: [{value: "2222",measurand: "Energy.Active.Export.Register", unit: "Wh"}]},
+  ]
+ })
+}
+function do_unknown() {
+ sendRequest("AAAAAAAAAAAAAAAAAA",{connectorId: get_inp('cidc')})
+}
+function do_error() {
+ sendRequest("Authorize",{})
+}
+
+window.console.log=function(txt) { message('resp','INFO '+txt); }
+window.onanyerror = function(msg, url, line, col, error) { message('resp','SERROR: '+msg+"  /line= "+line +" in url="+url);  } 
+window.onerror = function(msg, url, line, col, error) { message('resp','ERROR: '+msg+"  /line= "+line +" in url="+url);  } 
+
+</script>
+<fieldset><legend>Parametres</legend>
+<div id='param' style='font-size: 10px'>
+<table>
+<tr>
+ <td>ChargeBoxId</td><td><input type='text' id='cbi' value='TEST1'/></td><td>ConnectorId</td><td><input type='text' id='cidc'value='1'/></td>
+ <td>meterValue</td><td><input type='text' value='0'/></td><td>Status</td><td><input type='text' value='Accepted'/></td>
+</tr>
+<tr>
+ <td>transactionId</td><td><input type='text' id='trid' value='3243423'/></td><td>Tag Id</td><td><input type='text' id='tagid'value=''/></td>
+ <td></td><td><input type='text' value='0'/></td><td></td><td><input type='text' value=''/></td>
+</tr>
+<tr>
+ <td></td><td><input type='text' id='trid' value=''/></td><td></td><td><input type='text' value=''/></td>
+ <td></td><td><input type='text' value='0'/></td><td></td><td><input type='text' value=''/></td>
+</tr>
+</table>
+</div>
+</fieldset>
+
+<div id='con'>
+<button onclick='do_close()' style='width:400px;'>Close Connection!</button><br>
+<button onclick='do_boot()'>BootNotification</button>
+<button onclick='do_heartbeat()'>Heartbeat</button>
+<br>
+<button onclick='do_status()'>StatusNotification</button>
+<button onclick='do_meter()'>Measure</button>
+<br>
+<button onclick='do_authorize()'>Authorize</button>
+<button onclick='do_start()'>StartTransaction</button>
+<button onclick='do_stop()'>StopTransaction</button>
+<br>
+<button onclick='do_unknown()'>Unknown request</button>
+<button onclick='do_error()'>Request server error</button>
+
+</div>
+<div class='log' style="height:100px;width:auto;">JS Error<pre><code id='resp'></code></pre></div>
+<div  class='log' style="height:200px;width:auto;">Log<pre><code id='log'></code></pre></div>
+</div>
+<hr>
+</body></html>
