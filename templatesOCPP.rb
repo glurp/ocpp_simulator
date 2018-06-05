@@ -146,7 +146,7 @@ $client_cs_to_cp={
        params: ["LOCATION"],
        ret: {"t:status" => "STATUS" },
      },
-    :reserveNow => { :req=> '',
+    :reserveNow => { 
        params: %w{CONID TAGID DATE RESID},
        :req=> '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"><soap:Header>
        <chargeBoxIdentity xmlns="urn://Ocpp/Cp/2012/06/">TEST1</chargeBoxIdentity>
@@ -166,7 +166,7 @@ $client_cs_to_cp={
        </soap:Body></soap:Envelope>',
        ret: {"t:status" => "STATUS" },
     },
-    :cancelReservation => { :req=> '',
+    :cancelReservation => {
        params: ["RESID"],
        :req=> '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
 <soap:Header>
