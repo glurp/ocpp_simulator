@@ -56,6 +56,3 @@ TODO
 * [ ] GUI plugable
 * [ ] ws proxy integrated
 
-Licenses
-========
-Free, a beer :)
