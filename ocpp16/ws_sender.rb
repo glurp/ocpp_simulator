@@ -8,16 +8,14 @@
 require 'em-websocket-client'
 
 options = {}
-if ARGV.size<3
+if ARGV.size<2
   puts "Usage : > #{$0} remote-host remote-port  data..." 
   exit(1)
 end
-host = ARGV.shift
-port = ARGV.shift.to_i
+url = ARGV.shift
 mess = ARGV
 
 EventMachine.run {
-  url="ws://#{host}:#{port}"
   puts "Connecting to #{url}..."
   ws = EventMachine::WebSocketClient.connect(url)
   ws.callback { 

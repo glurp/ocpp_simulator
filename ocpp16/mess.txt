@@ -61,3 +61,5 @@
 #                           TriggerMessage => {"status":"Accepted/Rejected/NotImplemented"}
 #                          UnlockConnector => {"status":"Unlocked/UnlockFailed/NotSupported"}
 #                           UpdateFirmware => {}
+
+  {"connectorId":"2","errorCode":"ConnectorLockFailure","info":"","status":"Preparing","vendorErrorCode":"A"}

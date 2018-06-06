@@ -32,9 +32,19 @@ class Link
       @input_sid=nil
       
       url="ws://#{host}:#{port}#{path}"
+      make_connection(url)
+    end
+    
+    def make_connection(url)
       glog "Connecting to #{url}..."
       ws = EventMachine::WebSocketClient.connect(url)
+      @timer_connection=EM::Timer.new(10) { 
+          glog("timeout connection to s")
+          @server_close_ch.push("close")
+          ws.close() rescue nil
+      }
       ws.callback { 
+        @timer_connection.cancel 
         glog "connected"; 
         @input_sid = @input.subscribe { |msg| glog "s send #{msg.class} #{msg}" ; ws.send_msg(String.new(msg)) }
       }
@@ -42,6 +52,7 @@ class Link
         glog "s close" ;   
         @input.unsubscribe(@input_sid) if @input_sid
         @client_close_ch.unsubscribe(@client_close_ch_sid) if @client_close_ch_sid
+        @server_close_ch.push("close")
       } 
       ws.stream { |msg| 
           glog "s received #{msg}" 
@@ -58,9 +69,9 @@ end
 EventMachine.run {
   glog("starting on #{options[:port]} redirect to  ws://#{options[:remote_host]}:#{options[:remote_port]}")
   EventMachine::WebSocket.start({:host => "0.0.0.0", :port => options[:port]}) do |ws|
-    glog "c open"
-    ws.onopen {
-      glog "c 2 open"
+    ws.onopen { |handshake|
+      path=handshake.path
+      glog "c open #{path}"
       chOutput = EM::Channel.new
       chInput = EM::Channel.new
       server_close_ch = EM::Channel.new
@@ -71,7 +82,7 @@ EventMachine.run {
       
       ws.onmessage { |msg| glog "c received->root #{msg}"; chInput.push(msg)}
       glog "init connect to #{options[:remote_host]}:#{options[:remote_port]} ..."
-      Link.new(options[:remote_host],options[:remote_port],"/TEST",
+      Link.new(options[:remote_host],options[:remote_port],path,
               chInput, chOutput, server_close_ch, client_close_ch)
 
 

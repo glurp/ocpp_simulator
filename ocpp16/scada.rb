@@ -86,7 +86,7 @@ module EvSiReceiver
     {currentTime: get_time()} 
   end
   def do_authorize(mess)         
-     syncRooter("Authorize",mess, {status: "Accepted"} )
+     syncRooter("Authorize",mess,{"idTagInfo":{"status":"Accepted","expiryDate": get_time(1000+24*3600*7)}})
   end
   
   def do_metervalues(mess)        
@@ -94,12 +94,14 @@ module EvSiReceiver
     {}                      
   end
   def do_statusnotification(mess) 
+    p [@frame,self]
+    $app.updateCbiStatus(@cbi,mess) if @frame
     asyncRooter("StatusNotification",mess)     
     {}
   end
   def do_starttransaction(mess,&b)   
     trid=mess["connectorId"].to_i+(Time.now.to_i % 10000)*100
-    default={idTagInfo: {expiryDate: get_time(1000+24*3600*7),parentIdTag: "",status: "Accepted",transactionId: trid}} 
+    default={idTagInfo: {status: "Accepted",transactionId: trid}} 
     syncRooter("StartTransaction",mess,default,&b)
   end
   def do_stoptransaction(mess)     
@@ -153,7 +155,8 @@ class Evsi
     @cbi,@ws=cbi,ws
     @idSend=rand(1000..2000)
     $app.syncRooter(@cbi,"connected",nil,{})
-    @frame=$app.respond_to?(:cbiFrame) : $app.cbiFrame(cbi) : nil
+    @frame=$app.respond_to?(:cbiFrame) ? $app.cbiFrame(cbi) : nil
+    p [@frame]
   end
   def closed()
     $app.asyncRooter(@cbi,"closed",nil)
@@ -165,7 +168,7 @@ class Evsi
   def get_time(delta=0) (Time.now+delta).to_datetime.rfc3339 end  
   
   #################### CP=>CS ###################
-  def send_reply_later(resp)
+  def send_reply_later(id,resp)
     if resp 
       if resp.is_a?(Hash)
          send_callresult(id,resp) 
@@ -173,37 +176,45 @@ class Evsi
          send_callerror(id,resp) 
       end
     else
-      send_callerror(message[1],"no response for request '#{message[2]}' !") 
+      send_callerror(id,"no response for request '#{message[2]}' !") 
     end  
   end  
   def receive_call(message)
     begin
         code,id,name,mess=message
-        log [code,id,name]
+        log "REQUEST #{[code,id,name,mess]}"
         methode="do_#{name.downcase}"
-        response=self.send(methode,mess) {|resp| send_reply_latter(resp) ]
-        send_reply_latter(response)
+        #-----------------------------------
+        response=self.send(methode,mess) {|resp| send_reply_later(id,resp) }
+        #-----------------------------------
+        send_reply_later(id,response) if response
     rescue Exception => e
       log "#{e}\n  #{e.backtrace.join("\n  ")}"
       send_callerror(message[1]||0,e.to_s)
     end
   end
-  def send_callresult(id,message) @ws.send(JSON.generate([3,id,message])) end
-  def send_callerror(id,error)    @ws.send(JSON.generate([4,id,error.to_s,error.to_s])) end
+  def send_callresult(id,message) 
+    m=JSON.generate([3,id,message])
+    log "REPLY #{m}"
+    @ws.send(m)
+  end
+  def send_callerror(id,error)
+    m=JSON.generate([4,id,error.to_s,error.to_s])
+    log "REPLY-ERROR #{m}"
+    @ws.send(m)
+  end
   
-  if $app.hasOcpp16Slave?
-    def asyncRooter(name,message)
-       $app.asyncRooter(@cbi,name,message)
-    end
+  def asyncRooter(name,message)
+     $app.asyncRooter(@cbi,name,message)
   end
   def syncRooter(name,message,default,&b)
     if $app.hasOcpp16Slave?
        $app.syncRooter(@cbi,name,message,default,b)
+       nil
     else
        default
     end
   end
-  
   #################### CS=>CP ###################
   
   def send_call(reqName,mess)
@@ -300,12 +311,30 @@ module Ruiby_dsl
     def do_request(req)
        # TODO
     end
+    #================= CBI frame
+    def cbiFrame(cbi)
+      unless @hCbiFr[cbi]
+        append_to(@cbifr) { frame("CBI #{cbi}") {stack{ @hCbiFr[cbi]=[label(""),label(""),label("")] } } }
+      end
+      true
+    end
+    
+    # {"connectorId":"2","errorCode":"ConnectorLockFailure","info":"A","status":"Available","timestamp":"2018-06-05T15:50:28+02:00","vendorId":"ID9876","vendorErrorCode":"1"}
+    def updateCbiStatus(cbi,h)
+      nocon=h["connectorId"].to_i
+      h["errorCode"]="" if h["errorCode"] && h["errorCode"]=="NoError" 
+      if @hCbiFr[cbi] && @hCbiFr[cbi][nocon]
+          @hCbiFr[cbi][nocon].text="#{nocon>0 ? "C#{nocon}" : "Brn"}: status=#{h["status"]}#{disp(h,"errorCode","error=")}#{disp(h,"vendorErrorCode","vec=")}"
+      end
+    end
+    def disp(h,k,label) (h[k] && h[k].to_s.size>0) ? " #{label}#{h[k]}" : "" end
 end
 if ! defined?($first)
   $first=true
   $portWS=ARGV.first
   Ruiby.app(width: 800, height: 300, title: "WSocket serveur ws#{$portWS}") do
     move(30,30)
+    @hCbiFr={}
     def send_message(data)
       mlog "send JSON #{JSON.generate(data)}"
       $ws.send_msg(JSON.generate(data)) if $ws && $ok
@@ -313,7 +342,7 @@ if ! defined?($first)
     stack do
       labeli "port Websocket #{$portWS}, serveur HTTP sur #{$portWS.to_i+1}"
       separator
-      @enttitle=labeli("", font: "Courier bold 14")
+      @cbifr=sentenci { }
       separator
       $ta=text_area(10,100,font: "Courier 10")
       $ta.text=''
