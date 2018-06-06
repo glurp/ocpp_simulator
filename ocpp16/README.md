@@ -50,11 +50,11 @@ ws_sender : done
 
 TODO
 ====
-[ ] commands CS=>CP
-[x] timeout CS=>CP
-[ ] Header client ws with occp1.6 marker
-[ ] GUI plugable
-[ ] ws proxy integrated
+* [ ] commands CS=>CP
+* [x] timeout CS=>CP
+* [ ] Header client ws with occp1.6 marker
+* [ ] GUI plugable
+* [ ] ws proxy integrated
 
 Licenses
 ========
