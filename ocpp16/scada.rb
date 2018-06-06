@@ -3,28 +3,39 @@
 require 'femtows'
 require 'eventmachine'
 require 'em-websocket'
+require 'websocket-client-simple'
 require 'Ruiby'
 require 'json'
 
 # gem install eventmachine em-websocket 
 # gem install femtows Ruiby             # for debug
 
+require_relative 'ocpp_rooter'
+
 #############################################################
-#   ws_server.rb : serveur webSocket : 
+#   scada.rb : CS OCPP-J 1.6
 #   Usage :
-#     > scada.rb port 
-#        port   ==> webseocketserver port
+#     > scada.rb port  [urlrooter]
+#        port   ==> webSocket server port
 #        port+1 ==> Http server port
+#        urlrooter: if defined, proxy client connection to this ws url
 #############################################################
+#  Connection
+#  ==========
+#     ws:// or wss:// , URL ended with ChargeboxId ,
+#     Header "Sec-WebSocket-Protocol: ocpp1.6" must be writing by connection-client
+#  messages
+#  =======
 #  message= [type,id,Action,data]
+#
 #  type:
-#  ====
+#  -----
 #     CALL       : [<MessageTypeId> (2), "<UniqueId>", "<Action>", {<Payload>}]
 #     CALLRESULT : [<MessageTypeId> (3), "<UniqueId>", {<Payload>}]
-#     CALLERROR  : [<MessageTypeId> (4) , "<UniqueId>", "<errorCode>", "<errorDescription>", {<errorDetails>}]
-#                                                        ^NotSupported InternalError ProtocolError SecurityError 
-#                                                         FormationViolation PropertyConstraintViolation  
-#                                                         OccurenceConstraintViolation TypeConstraintViolation GenericError 
+#     CALLERROR  : [<MessageTypeId> (4), "<UniqueId>", "<errorCode>", "<errorDescription>", {<errorDetails>}]
+#                                                       ^NotSupported InternalError ProtocolError SecurityError 
+#                                                        FormationViolation PropertyConstraintViolation  
+#                                                        OccurenceConstraintViolation TypeConstraintViolation GenericError 
 #  CP=>CS : CALL => CALLRESULT | CALLERROR  
 #  CS=>CP : idem (!)
 #     CALL       = 2
@@ -32,16 +43,17 @@ require 'json'
 #     CALLERROR= = 4
 #
 #  id:
-#  ===
+#  ----
 #    nombre, en string different pour chaque  CALL , meme nombre pour le CALLRESULT ( ou CALLERROR)
 #  Action
-#  ======
-#     nom de la requete: "BootNotification"
+#  ------
+#     request name : "BootNotification" (without 'Requests')
 #  data
-#  =======
-#    objet JSON
+#  -----
+#    objet JSON, see mess.txt
 #
 # Exemples 
+#---------
 =begin
 [2,
  "19223201",
@@ -58,18 +70,41 @@ require 'json'
 module EvSiReceiver
   #------------------ Requests
   
-  def do_bootnotification(mess) {status: "Accepted", currentTime: get_time(), interval: 600 }  end
-  def do_datatransfer(mess)     {status: "Accepted"}      end
+  def do_bootnotification(mess) 
+    asyncRooter("BootNotification",mess)
+    {status: "Accepted", currentTime: get_time(), interval: 1800 }  
+  end
+  def do_datatransfer(mess)     
+    asyncRooter("Datatransfer",mess)
+    {status: "Accepted"}      
+  end
   def do_diagnosticsstatusnotification(mess)  {}          end
-  def do_firmwarestatusnotification(mess)  {}             end
-  def do_heartbeat(mess)        {currentTime: get_time()} end
-  def do_authorize(mess)         mess["idTag"] ? {status: "Accepted"} : raise("tagId manquant en requette Authorize")
+  def do_firmwarestatusnotification(mess)     {}          end
+  
+  def do_heartbeat(mess)        
+    asyncRooter("Heartbeat",mess)     
+    {currentTime: get_time()} 
+  end
+  def do_authorize(mess)         
+     syncRooter("Authorize",mess, {status: "Accepted"} )
   end
   
-  def do_metervalues(mess)        {}                      end
-  def do_statusnotification(mess) {}                     end
-  def do_starttransaction(mess)   {idTagInfo: {expiryDate: get_time(1000),parentIdTag: "",status: "Accepted"},transactionId: 333333}  end
-  def do_stoptransaction(mess)     {idTagInfo: {status: "Accepted"}} end
+  def do_metervalues(mess)        
+    asyncRooter("MeterValues",mess)     
+    {}                      
+  end
+  def do_statusnotification(mess) 
+    asyncRooter("StatusNotification",mess)     
+    {}
+  end
+  def do_starttransaction(mess,&b)   
+    trid=mess["connectorId"].to_i+(Time.now.to_i % 10000)*100
+    default={idTagInfo: {expiryDate: get_time(1000+24*3600*7),parentIdTag: "",status: "Accepted",transactionId: trid}} 
+    syncRooter("StartTransaction",mess,default,&b)
+  end
+  def do_stoptransaction(mess)     
+    syncRooter("StopTransaction",mess,{idTagInfo: {status: "Accepted"}} )
+  end
 
   
   #?
@@ -114,39 +149,60 @@ end
 class Evsi 
   include EvSiReceiver
   include EvSiTransmiter
-  
   def initialize(cbi,ws)
     @cbi,@ws=cbi,ws
     @idSend=rand(1000..2000)
+    $app.syncRooter(@cbi,"connected",nil,{})
+    @frame=$app.respond_to?(:cbiFrame) : $app.cbiFrame(cbi) : nil
   end
   def closed()
+    $app.asyncRooter(@cbi,"closed",nil)
   end
-  
+  def close()
+    @ws.close()
+  end  
   def log(t) $app.log("[#{@cbi}] #{t}") end
   def get_time(delta=0) (Time.now+delta).to_datetime.rfc3339 end  
   
   #################### CP=>CS ###################
+  def send_reply_later(resp)
+    if resp 
+      if resp.is_a?(Hash)
+         send_callresult(id,resp) 
+      else
+         send_callerror(id,resp) 
+      end
+    else
+      send_callerror(message[1],"no response for request '#{message[2]}' !") 
+    end  
+  end  
   def receive_call(message)
     begin
-      timeout(60) {
         code,id,name,mess=message
         log [code,id,name]
         methode="do_#{name.downcase}"
-        response=self.send(methode,mess)
-        response ? send_callresult(id,response) : raise("no response to #{name} request")
-      }
+        response=self.send(methode,mess) {|resp| send_reply_latter(resp) ]
+        send_reply_latter(response)
     rescue Exception => e
       log "#{e}\n  #{e.backtrace.join("\n  ")}"
       send_callerror(message[1]||0,e.to_s)
     end
   end
-  def send_callresult(id,message)
-    @ws.send(JSON.generate([3,id,message]))
-  end
-  def send_callerror(id,error)
-    @ws.send(JSON.generate([4,id,error.to_s,error.to_s]))
-  end
+  def send_callresult(id,message) @ws.send(JSON.generate([3,id,message])) end
+  def send_callerror(id,error)    @ws.send(JSON.generate([4,id,error.to_s,error.to_s])) end
   
+  if $app.hasOcpp16Slave?
+    def asyncRooter(name,message)
+       $app.asyncRooter(@cbi,name,message)
+    end
+  end
+  def syncRooter(name,message,default,&b)
+    if $app.hasOcpp16Slave?
+       $app.syncRooter(@cbi,name,message,default,b)
+    else
+       default
+    end
+  end
   
   #################### CS=>CP ###################
   
@@ -172,11 +228,17 @@ class WebSocketServer
     @hConnection={}
     @connected=false
     EM::WebSocket.run(:host => "0.0.0.0", :port => port) do |ws|
-      log("websocket server run")
+      log("websocket new connection")
       cbi=""
-      ws.onopen { |handshake| cbi=onConnected(ws,handshake) rescue log("#{$!}\n  #{$!.backtrace.join("\n  ")}") }
-      ws.onclose { onClose(cbi,ws)  rescue log("#{$!}\n  #{$!.backtrace.join("\n  ")}") }
-      ws.onmessage { |msg| onMessage(cbi,ws,msg)  rescue log("#{$!}\n  #{$!.backtrace.join("\n  ")}") }
+      ws.onopen { |handshake| 
+         cbi=onConnected(ws,handshake) rescue log("#{$!}\n  #{$!.backtrace.join("\n  ")}") 
+      }
+      ws.onclose { 
+        onClose(cbi,ws)  rescue log("#{$!}\n  #{$!.backtrace.join("\n  ")}") 
+      }
+      ws.onmessage { |msg| 
+        onMessage(cbi,ws,msg)  rescue log("#{$!}\n  #{$!.backtrace.join("\n  ")}") 
+      }
     end
     app.log("WS serveur OCCCP 1.6 JSON on #{port} ... ready")
   end
@@ -187,19 +249,24 @@ class WebSocketServer
     cbi
   end
   def onClose(cbi,ws)
-    log "Connection closed"
-    @hConnection[cbi].closed()
+    log "Connection closed #{cbi} !"
+    @hConnection[cbi].closed() if @hConnection[cbi]
   end
   def onMessage(cbi,ws,msg)
-    mess=JSON.parse(msg)
-    log "RECEIVED #{mess.inspect}"
-    evsi=@hConnection[cbi]
-    case mess[0]
-      when 2 then evsi.receive_call(mess)
-      when 3 then evsi.receive_callresult(mess)
-      when 4 then evsi.receive_callerror(mess)
-      else
-        raise("unknown CALL code  #{mess.inspect}")
+    begin
+      mess=JSON.parse(msg)
+      log "RECEIVED #{mess.inspect}"
+      evsi=@hConnection[cbi]
+      case mess[0]
+        when 2 then evsi.receive_call(mess)
+        when 3 then evsi.receive_callresult(mess)
+        when 4 then evsi.receive_callerror(mess)
+        else
+          raise("unknown CALL code  #{mess.inspect}")
+      end
+    rescue Exception => e
+      log(e)
+      @hConnection[cbi].close()
     end
   end
   def log(txt)
@@ -207,17 +274,31 @@ class WebSocketServer
     @app.log(txt.to_s)
   end
   def vie()
-      
   end
 end
 
+def mlog(*t) $app.instance_eval { log(*t) } if $app end
 
-def mlog(*t) $app.instance_eval { mlog(*t) } if $app end
 module Ruiby_dsl
     def log(*t) 
        current=$ta.text
-       current=current[-1000...-1] if current.size>10_000
-       $ta.text="#{current}\n#{Time.now.strftime('%H:%M:%S')} | #{t.join(' ')}" 
+       current=current[-4000...-1] if current.size>10_000
+       mess="#{Time.now.strftime('%H:%M:%S')} | #{t.join(' ')}"
+       $ta.text="#{current}\n#{mess}" 
+       File.open("log.txt","a+") {|f| f.puts(mess)}
+    end
+    
+    def hasOcpp16Slave?
+      ARGV.size>1
+    end
+    def asyncRooter(cbi,name,message)
+      OcppJRooter.asyncRooter(cbi,name,message) if  hasOcpp16Slave?
+    end
+    def syncRooter(cbi,name,message,defaultReponse)
+      OcppJRooter.syncRooter(cbi,name,message,defaultReponse)  if hasOcpp16Slave?
+    end
+    def do_request(req)
+       # TODO
     end
 end
 if ! defined?($first)
@@ -243,7 +324,7 @@ if ! defined?($first)
       }
     end
           
-    after(1)  {  @wss=WebSocketServer.new(self,$portWS.to_i) ; httpd_init(self,$portWS.to_i)}
+    after(1)  {  @wss=WebSocketServer.new(self,$portWS.to_i) ; httpd_init(self,$portWS.to_i) ; log("Ready to root to #{ARGV[1]}") if ARGV.size>1}
     anim(3000) { @wss.vie if @wss } 
   end
 end # end if !defined

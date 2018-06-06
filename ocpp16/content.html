@@ -61,7 +61,7 @@ function createClient(port,cbi) {
     //this.send("Hello world!");
   };
 }
-setInterval(function() { createClient(__PORT__,get_inp('cbi')); },2000);
+setInterval(function() { createClient(__PORT__,get_inp('cbi')); },10000);
 setTimeout(function() { createClient(__PORT__,get_inp('cbi')); },100);
 /************************************************************************************
    OCPP JSON 1.6 Request
