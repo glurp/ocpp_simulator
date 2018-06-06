@@ -44,12 +44,12 @@ Status
 ========
 
 CP->CS tested with real Evsi (Schneider EVLink Wallbox).
+
 scada.rb as proxy : current developping
-ws_proxy : done
-ws_sender : done
 
 TODO
 ====
+
 * [ ] commands CS=>CP
 * [x] timeout CS=>CP
 * [ ] Header client ws with occp1.6 marker
