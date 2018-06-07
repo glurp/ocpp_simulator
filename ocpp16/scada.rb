@@ -10,15 +10,13 @@ require 'json'
 # gem install eventmachine em-websocket 
 # gem install femtows Ruiby             # for debug
 
-require_relative 'ocpp_rooter'
 
 #############################################################
 #   scada.rb : CS OCPP-J 1.6
 #   Usage :
-#     > scada.rb port  [urlrooter]
+#     > scada.rb port 
 #        port   ==> webSocket server port
 #        port+1 ==> Http server port
-#        urlrooter: if defined, proxy client connection to this ws url
 #############################################################
 #  Connection
 #  ==========
@@ -71,41 +69,34 @@ module EvSiReceiver
   #------------------ Requests
   
   def do_bootnotification(mess) 
-    asyncRooter("BootNotification",mess)
     {status: "Accepted", currentTime: get_time(), interval: 1800 }  
   end
   def do_datatransfer(mess)     
-    asyncRooter("Datatransfer",mess)
     {status: "Accepted"}      
   end
   def do_diagnosticsstatusnotification(mess)  {}          end
   def do_firmwarestatusnotification(mess)     {}          end
   
   def do_heartbeat(mess)        
-    asyncRooter("Heartbeat",mess)     
     {currentTime: get_time()} 
   end
   def do_authorize(mess)         
-     syncRooter("Authorize",mess,{"idTagInfo":{"status":"Accepted","expiryDate": get_time(1000+24*3600*7)}})
+     {"idTagInfo":{"status":"Accepted","expiryDate": get_time(1000+24*3600*7)}}
   end
   
   def do_metervalues(mess)        
-    asyncRooter("MeterValues",mess)     
     {}                      
   end
   def do_statusnotification(mess) 
-    p [@frame,self]
     $app.updateCbiStatus(@cbi,mess) if @frame
-    asyncRooter("StatusNotification",mess)     
     {}
   end
   def do_starttransaction(mess,&b)   
     trid=mess["connectorId"].to_i+(Time.now.to_i % 10000)*100
-    default={idTagInfo: {status: "Accepted",transactionId: trid}} 
-    syncRooter("StartTransaction",mess,default,&b)
+    {idTagInfo: {status: "Accepted"},transactionId: trid}
   end
   def do_stoptransaction(mess)     
-    syncRooter("StopTransaction",mess,{idTagInfo: {status: "Accepted"}} )
+    {idTagInfo: {status: "Accepted"}}
   end
 
   
@@ -154,12 +145,10 @@ class Evsi
   def initialize(cbi,ws)
     @cbi,@ws=cbi,ws
     @idSend=rand(1000..2000)
-    $app.syncRooter(@cbi,"connected",nil,{})
     @frame=$app.respond_to?(:cbiFrame) ? $app.cbiFrame(cbi) : nil
     p [@frame]
   end
   def closed()
-    $app.asyncRooter(@cbi,"closed",nil)
   end
   def close()
     @ws.close()
@@ -168,7 +157,8 @@ class Evsi
   def get_time(delta=0) (Time.now+delta).to_datetime.rfc3339 end  
   
   #################### CP=>CS ###################
-  def send_reply_later(id,resp)
+  
+  def send_reply(id,resp)
     if resp 
       if resp.is_a?(Hash)
          send_callresult(id,resp) 
@@ -185,9 +175,9 @@ class Evsi
         log "REQUEST #{[code,id,name,mess]}"
         methode="do_#{name.downcase}"
         #-----------------------------------
-        response=self.send(methode,mess) {|resp| send_reply_later(id,resp) }
+        response=self.send(methode,mess) {}
         #-----------------------------------
-        send_reply_later(id,response) if response
+        send_reply(id,response) if response
     rescue Exception => e
       log "#{e}\n  #{e.backtrace.join("\n  ")}"
       send_callerror(message[1]||0,e.to_s)
@@ -203,18 +193,7 @@ class Evsi
     log "REPLY-ERROR #{m}"
     @ws.send(m)
   end
-  
-  def asyncRooter(name,message)
-     $app.asyncRooter(@cbi,name,message)
-  end
-  def syncRooter(name,message,default,&b)
-    if $app.hasOcpp16Slave?
-       $app.syncRooter(@cbi,name,message,default,b)
-       nil
-    else
-       default
-    end
-  end
+
   #################### CS=>CP ###################
   
   def send_call(reqName,mess)
@@ -254,19 +233,20 @@ class WebSocketServer
     app.log("WS serveur OCCCP 1.6 JSON on #{port} ... ready")
   end
   def onConnected(ws,handshake)
-    cbi=handshake.path[1..-1]
+    cbi=handshake.path[1..-1] 
+    $app.updateCbiCom(cbi,true) if $app.respond_to?(:updateCbiCom)
     log "WebSocket connection open from #{handshake.origin}  ===> CBI=#{cbi}"
     @hConnection[cbi]=Evsi.new(cbi,ws);
     cbi
   end
   def onClose(cbi,ws)
     log "Connection closed #{cbi} !"
+    $app.updateCbiCom(cbi,false) if $app.respond_to?(:updateCbiCom)
     @hConnection[cbi].closed() if @hConnection[cbi]
   end
   def onMessage(cbi,ws,msg)
     begin
       mess=JSON.parse(msg)
-      log "RECEIVED #{mess.inspect}"
       evsi=@hConnection[cbi]
       case mess[0]
         when 2 then evsi.receive_call(mess)
@@ -291,6 +271,7 @@ end
 def mlog(*t) $app.instance_eval { log(*t) } if $app end
 
 module Ruiby_dsl
+
     def log(*t) 
        current=$ta.text
        current=current[-4000...-1] if current.size>10_000
@@ -299,36 +280,62 @@ module Ruiby_dsl
        File.open("log.txt","a+") {|f| f.puts(mess)}
     end
     
-    def hasOcpp16Slave?
-      ARGV.size>1
-    end
-    def asyncRooter(cbi,name,message)
-      OcppJRooter.asyncRooter(cbi,name,message) if  hasOcpp16Slave?
-    end
-    def syncRooter(cbi,name,message,defaultReponse)
-      OcppJRooter.syncRooter(cbi,name,message,defaultReponse)  if hasOcpp16Slave?
-    end
-    def do_request(req)
+    #================================================================================
+    #= demande de telecommande (from HMI ?) TODO
+    #================================================================================
+    
+    def do_request(cbi,name,req)
        # TODO
     end
-    #================= CBI frame
+    
+    #================================================================================
+    #= CBI frame 
+    #================================================================================
+    
     def cbiFrame(cbi)
       unless @hCbiFr[cbi]
-        append_to(@cbifr) { frame("CBI #{cbi}") {stack{ @hCbiFr[cbi]=[label(""),label(""),label("")] } } }
+        append_to(@cbifr) { frame("CBI #{cbi}") {stack { 
+          @hCbiFr[cbi]={}
+          3.times { |con|
+            hw={}
+            flowi {
+              hw["con"]=labeli("")
+              hw["com"]=labeli("Connected") if con==0
+              hw["status"]=labeli("")
+              hw["errorCode"]=labeli("")
+              hw["vendorErrorCode"]=labeli("")
+            }
+            @hCbiFr[cbi][con]=hw
+          }
+        } } }
       end
       true
     end
     
     # {"connectorId":"2","errorCode":"ConnectorLockFailure","info":"A","status":"Available","timestamp":"2018-06-05T15:50:28+02:00","vendorId":"ID9876","vendorErrorCode":"1"}
-    def updateCbiStatus(cbi,h)
-      nocon=h["connectorId"].to_i
+    # {"com":"Connected"} 
+    def updateCbiStatus(cbi,hm)
+      h=hm.clone
+      nocon=(h["connectorId"]||"0").to_i
+      h["con"]=(nocon==0) ? "Brn" : "C#{nocon}"
       h["errorCode"]="" if h["errorCode"] && h["errorCode"]=="NoError" 
       if @hCbiFr[cbi] && @hCbiFr[cbi][nocon]
-          @hCbiFr[cbi][nocon].text="#{nocon>0 ? "C#{nocon}" : "Brn"}: status=#{h["status"]}#{disp(h,"errorCode","error=")}#{disp(h,"vendorErrorCode","vec=")}"
+          @hCbiFr[cbi][nocon].each {|k,lab| lab.text=disp(h,k,"#{k[0..2]}=") }
       end
     end
-    def disp(h,k,label) (h[k] && h[k].to_s.size>0) ? " #{label}#{h[k]}" : "" end
+    
+    def disp(h,k,label) (h[k] && h[k].to_s.size>0) ? " #{h[k]}" : "" end
+    
+    def updateCbiCom(cbi,state) 
+      updateCbiStatus(cbi,{"com" => (state ? "Connected" : "?-?") }) 
+    end
 end
+
+if defined?($first)
+  $app.instance_eval {@hCbiFr={}; clear(@cbifr) }
+end
+
+
 if ! defined?($first)
   $first=true
   $portWS=ARGV.first
@@ -342,14 +349,14 @@ if ! defined?($first)
     stack do
       labeli "port Websocket #{$portWS}, serveur HTTP sur #{$portWS.to_i+1}"
       separator
-      @cbifr=sentenci { }
+      stacki { scrolled(800,100) { @cbifr=flowi { } } }
       separator
-      $ta=text_area(10,100,font: "Courier 10")
+      stack { $ta=text_area(30,100,{:font=>"Courier new 8", :bg => "#133", :fg=> "#FF0"})  }
       $ta.text=''
       flowi {
-        buttoni("Clear",bg: "#CCAABB") { $ta.text='' }
-        buttoni("Reload",bg: "#CCAABB") { load(__FILE__) }
-        buttoni("Exit",bg: "#CCAABB") { exit!() }
+        buttoni("Clear") { $ta.text='' }
+        buttoni("Reload") { load(__FILE__) }
+        buttoni("Exit") { exit!() }
       }
     end
           
