@@ -16,7 +16,7 @@ require 'bunny'
 #  *QR:
 #    exchange: evsi.<contrat>.saia.#
 #    getconfig:
-#        {getconfxml: "serviceName"} 
+#        {getconfxml: "serviceName"}  
 #    find varName/objectName in RTDB
 #        exchange: evsi.<contrat>.saia.#
 #        {select: [["str_name",["field","=","value","field","<","value",...]],...]}
