@@ -1,5 +1,32 @@
 require 'bunny'
 
+# gem install bunny
+#################################################################################################################
+#  amqp.rb : connector between RabbitMQ/Saia and OCPP serveur
+#  *subscribe:
+#    commandes to send to Evsi
+#       exchange :"ocpp16"  (?)
+#       key=evsi.<contrat>.ocpp16.<cbi>.<con>  select on : evsi.<contrat>.ocpp16.#
+#       message: {requestName,{...}}
+#     
+#  *publish:
+#    RTDB write packet
+#        exchange: evsi.<contrat>.saia.#
+#        {object: "BORNE_33",[{"varname": "energie" , value: 3232 , dt: timestamp},...],...}
+#  *QR:
+#    exchange: evsi.<contrat>.saia.#
+#    getconfig:
+#        {getconfxml: "serviceName"} 
+#    find varName/objectName in RTDB
+#        exchange: evsi.<contrat>.saia.#
+#        {select: [["str_name",["field","=","value","field","<","value",...]],...]}
+#           <= ['BORNE_33','CHARGE_22',...]
+#    read varName/objectName in RTDB
+#        exchange: evsi.<contrat>.saia.#
+#        {read: ["CHARGE_22.energie",...]}
+#           <= [[222,tmstp],...]
+#################################################################################################################
+
 class SaiaAmqpConnector
   def initialize(host)
       @conn = Bunny.new("amqp://localhost:5672")
@@ -17,7 +44,7 @@ class SaiaAmqpConnector
    }
   end
   
-  def subscribe_topic(client,topicName)
+  def subscribe_topic(client,topicName,filter)
     @clients[topicName] << client
     @exchange[topicName]    = @channel.topic(topicName, :auto_delete => true)
   end
