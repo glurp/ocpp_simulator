@@ -90,12 +90,9 @@ On a donc :
 Donc :
 
 -   Les producteurs de message émettent des messages vers des **Exchange**, en documentant chaque message par un **header**,
-
 -   Les consommateurs reçoivent des messages via des queues,
-
 -   Le lien entre **Exchange** et **Queue** est déclaratif, via une ou plusieurs **Rules** (déclarées lors de la création d'une **Queue**) declarant un lien logique en les données d'un header de message et une **queue**
-
-![](media/image20.png){width="4.346574803149606in" height="0.5402777777777777in"}
+-   ![1530043195658](C:\Users\RDAUBA~1\AppData\Local\Temp\1530043195658.png)
 
 Le design des méta-data des **messages** détermine les **rules** utilisables, qui déterminent les **Exchange** à configurer. Cela effectué, chaque consommateur créera sa/ses queue(s) avec les rules associés.
 
